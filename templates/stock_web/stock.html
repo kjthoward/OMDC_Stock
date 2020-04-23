@@ -1,13 +1,13 @@
 {% extends "stock_web/base.html" %}
 {% load staticfiles %}
-{% block title %}Stock Database{% endblock title %}
+{% block title %}OMDC Stock Database{% endblock title %}
 {% block ico %}<link rel="shortcut icon" type="image/png" href="{% static 'stock_web/favicon.ico' %}"/>{% endblock ico %}
 {% block toolbar %}
   <!-- Fixed toolbar -->
   <nav class="navbar navbar-toolbar navbar-inverse">
     <div class="container-fluid">
       <div class="navbar-header">
-        <a class="navbar-brand" href="/stock/listinv/">Stock Database</a>
+        <a class="navbar-brand" href="/stock/listinv/">OMDC Stock Database</a>
       </div>
       {% if toolbar %}
         {% for section, position  in  toolbar %}
