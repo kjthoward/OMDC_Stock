@@ -19,7 +19,7 @@ import string
 from .prime import PRIME
 from .email import send, EMAIL
 from .pdf_report import report_gen
-from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, CytoUsage
+from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
                    EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
@@ -249,8 +249,8 @@ def listinv(httprequest):
     body=[]
     for item in items:
         values = [item.name,
-                  "{}µl".format(item.count_no) if item.is_cyto==True else item.count_no,
-                  "{}µl".format(item.min_count) if item.is_cyto==True else item.min_count]
+                  "{}µl".format(item.count_no) if item.track_vol==True else item.count_no,
+                  "{}µl".format(item.min_count) if item.track_vol==True else item.min_count]
         urls=[reverse("stock_web:inventory",args=["filter","reagent__name__iexact={};finished__lte=0".format(item.name),"_",1]),
               "",
               "",
@@ -529,8 +529,8 @@ def invreport(httprequest,what, extension):
             body=[["Reagent", "Number In Stock", "Minimum Stock Level"]]
             for item in items:
                 body+= [[item.name,
-                         "{}µl".format(item.count_no) if item.is_cyto==True else item.count_no,
-                         "{}µl".format(item.min_count) if item.is_cyto==True else item.min_count]]
+                         "{}µl".format(item.count_no) if item.track_vol==True else item.count_no,
+                         "{}µl".format(item.min_count) if item.track_vol==True else item.min_count]]
         if extension=='0':
             httpresponse = HttpResponse(content_type='application/pdf')
             httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
@@ -622,14 +622,14 @@ def _item_context(httprequest, item, undo):
             values+=["Re-Open Item"]
             urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
     body = [(zip(values,urls, urls),False)]
-    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "cyto":False}
+    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "track_vol":False}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     return context
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def _cyto_context(httprequest, item, undo):
+def _vol_context(httprequest, item, undo):
     stripe=False
     title = ["Reagent - {}".format(item.reagent.name),
              "Supplier - {}".format(item.supplier.name),
@@ -713,12 +713,12 @@ def _cyto_context(httprequest, item, undo):
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     if item.current_vol<item.vol_rec:
-        cyto_headings=["Volume at Start", "Volume at End", "Volume Used", "Date", "User"]
+        vol_headings=["Volume at Start", "Volume at End", "Volume Used", "Date", "User"]
         if undo=="undo":
-            cyto_headings+=["Action"]
-        uses=CytoUsage.objects.filter(item=item.pk)
+            vol_headings+=["Action"]
+        uses=VolUsage.objects.filter(item=item.pk)
         uses=sorted(uses, key = lambda use:use.date)
-        cyto_body=[]
+        vol_body=[]
         for use in uses:
             values=[use.start,
                     use.end,
@@ -743,11 +743,11 @@ def _cyto_context(httprequest, item, undo):
                     values+=[""]
                     urls+=[""]
                     style+=[""]
-            cyto_body.append((zip(values,urls,urls),stripe))
+            vol_body.append((zip(values,urls,urls),stripe))
             stripe=not(stripe)
-        context.update({"cyto":True,
-                        "cyto_headings":cyto_headings,
-                        "cyto_body":cyto_body})
+        context.update({"track_vol":True,
+                        "vol_headings":vol_headings,
+                        "vol_body":vol_body})
     return context
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
@@ -756,7 +756,7 @@ def useitem(httprequest,pk):
     item=Inventory.objects.get(pk=int(pk))
     if item.is_op==False:
         return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
-    uses=CytoUsage.objects.filter(item=item)
+    uses=VolUsage.objects.filter(item=item)
     if item.is_op==True and item.val is None and len(uses)>0 and item.sol is None:
         messages.success(httprequest, "WARNING - ITEM IS NOT VALIDATED")
     form=UseItemForm
@@ -816,7 +816,7 @@ def openitem(httprequest, pk):
         else:
             if form.is_valid():
                 Inventory.open(form.cleaned_data, pk, httprequest.user)
-                if item.reagent.is_cyto==False:
+                if item.reagent.track_vol==False:
                     if item.reagent.count_no<item.reagent.min_count:
                         if item.sol is not None:
                             make="made"
@@ -885,7 +885,7 @@ def finishitem(httprequest, pk):
             if form.is_valid():
 
                 Inventory.finish(form.cleaned_data, pk, httprequest.user)
-                if item.reagent.is_cyto==True or item.is_op==False:
+                if item.reagent.track_vol==True or item.is_op==False:
                     if item.reagent.count_no<item.reagent.min_count:
                         if item.sol is not None:
                             make="made"
@@ -893,7 +893,7 @@ def finishitem(httprequest, pk):
                             make="ordered"
                         messages.success(httprequest, "Current stock level for {0} is {1}{2}. Minimun quantity is {3}{2}. Check if more needs to be {4}".format(item.reagent.name,
                                                                                                                                               item.reagent.count_no,
-                                                                                                                                              "µl" if item.reagent.is_cyto else "",
+                                                                                                                                              "µl" if item.reagent.track_vol else "",
                                                                                                                                               item.reagent.min_count,
                                                                                                                                               make))
                         if EMAIL==True:
@@ -935,10 +935,10 @@ def finishitem(httprequest, pk):
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def item(httprequest, pk):
     item = Inventory.objects.select_related("supplier","reagent","internal","val").get(pk=int(pk))
-    if item.reagent.is_cyto==False:
+    if item.reagent.track_vol==False:
         return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "_"))
     else:
-        return render(httprequest, "stock_web/list_item.html", _cyto_context(httprequest, item, "_"))
+        return render(httprequest, "stock_web/list_item.html", _vol_context(httprequest, item, "_"))
 
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
@@ -972,7 +972,7 @@ def recipe(httprequest, pk):
     body=[]
     for i in range(1, item.length()+1):
         values = [eval('item.comp{}.name'.format(i)),
-                  "{}µl".format(eval('item.comp{}.count_no'.format(i))) if eval('item.comp{}.is_cyto'.format(i))==True else eval('item.comp{}.count_no'.format(i)),
+                  "{}µl".format(eval('item.comp{}.count_no'.format(i))) if eval('item.comp{}.track_vol'.format(i))==True else eval('item.comp{}.count_no'.format(i)),
                   ]
         urls= ["",
                ""]
@@ -1003,9 +1003,9 @@ def newinv(httprequest, pk):
         item=Reagents.objects.get(pk=int(pk))
         title=["Enter Delivery Details - {}".format(item)]
         template="stock_web/form.html"
-        if item.is_cyto==False:
+        if item.track_vol==False:
             form=NewInvForm
-        elif item.is_cyto==True:
+        elif item.track_vol==True:
             form=NewProbeForm
         if httprequest.method=="POST":
             if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
@@ -1015,9 +1015,9 @@ def newinv(httprequest, pk):
                 if form.is_valid():
                     ids=Inventory.create(form.cleaned_data, httprequest.user)
                     message=[]
-                    if item.is_cyto==False:
+                    if item.track_vol==False:
                         quant=form.cleaned_data["reagent"].count_no+int(form.data["num_rec"])
-                    elif item.is_cyto==True:
+                    elif item.track_vol==True:
                         quant=form.cleaned_data["reagent"].count_no+int(form.data["vol_rec"])
                     if quant<form.cleaned_data["reagent"].min_count:
                         if form.cleaned_data["reagent"].recipe is not None:
@@ -1034,10 +1034,10 @@ def newinv(httprequest, pk):
                              message+=["THIS ITEM IS VALIDATED. RUN {}".format(items[0].val.val_run)]
                         else:
                              message+=["THIS ITEM IS NOT VALIDATED"]
-                        if item.is_cyto==False:
+                        if item.track_vol==False:
                             messages.info(httprequest, "{}x {} added".format(form.data["num_rec"],
                                                                               form.cleaned_data["reagent"]))
-                        elif item.is_cyto==True:
+                        elif item.track_vol==True:
                             messages.info(httprequest, "1x {}µl of {} added".format(form.data["vol_rec"],
                                                                               form.cleaned_data["reagent"]))
                     if message!=[]:
@@ -1073,7 +1073,7 @@ def createnewsol(httprequest, pk):
             Reagents_set=set(Reagents)
             vols_used={}
             vol_made=""
-            if recipe.is_cyto==True:
+            if recipe.track_vol==True:
                 if httprequest.POST.getlist("total_volume")==[""]:
                     messages.success(httprequest, "Total Volume Made Not Entered")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
@@ -1140,17 +1140,17 @@ def createnewsol(httprequest, pk):
         values=[]
         inv_ids = []
         checked = []
-        CYTO=[]
+        VOL=[]
         potentials=recipe.liststock()
         potentials.sort(key=attrgetter("is_op"),reverse=True)
-        if recipe.is_cyto==False:
-            cyto=False
+        if recipe.track_vol==False:
+            vol=False
             headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Validation Run", "Select"]
-        elif recipe.is_cyto==True:
-            cyto=True
+        elif recipe.track_vol==True:
+            vol=True
             headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Current Volume", "Validation Run", "Select", "Volume used (µl)"]
         for p in potentials:
-            #temp used so that can make array for that item, then insert if it's cyto
+            #temp used so that can make array for that item, then insert if it's volume is tracked
             temp=[p.reagent.name,
                   p.supplier.name,
                   p.date_exp,
@@ -1158,17 +1158,17 @@ def createnewsol(httprequest, pk):
                   p.lot_no,
                   p.date_op if p.date_op is not None else "NOT OPEN",
                   p.val.val_run if p.val is not None else ""]
-            if cyto==True:
+            if vol==True:
                 temp.insert(-1, "{}µl".format(p.current_vol))
             values.append(temp)
             inv_ids.append(p.id)
             checked.append("")
-            CYTO.append(cyto)
+            VOL.append(vol)
         context = { "headings": headings,
-                    "body": zip(values, inv_ids, checked, CYTO),
+                    "body": zip(values, inv_ids, checked, VOL),
                     "url": reverse("stock_web:createnewsol", args=[pk]),
                     "toolbar": _toolbar(httprequest),
-                    "total":cyto,
+                    "total":vol,
                     "identifier":title,
                     "form":form,
                     "cancelurl": reverse("stock_web:newinv",args=["_"]),
@@ -1316,7 +1316,7 @@ def changemin(httprequest, pk):
         return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
     else:
         item=Reagents.objects.get(pk=int(pk))
-        if item.is_cyto==True:
+        if item.track_vol==True:
             header = ["Select New Default Minimum Stock Level (in µl) for {}".format(item)]
         else:
             header = ["Select New Default Minimum Stock Level for {}".format(item)]
@@ -1329,7 +1329,7 @@ def changemin(httprequest, pk):
                 if form.is_valid():
                     item.min_count=form.cleaned_data["number"]
                     item.save()
-                    messages.success(httprequest, "Minimum Stock Number for {} has changed to {}{}".format(item,form.cleaned_data["number"], "µl" if item.is_cyto==True else ""))
+                    messages.success(httprequest, "Minimum Stock Number for {} has changed to {}{}".format(item,form.cleaned_data["number"], "µl" if item.track_vol==True else ""))
                     return HttpResponseRedirect(reverse("stock_web:listinv"))
         else:
             form = form(initial = {"old":item.min_count})
@@ -1415,10 +1415,8 @@ def editinv(httprequest, pk):
         return render(httprequest, "stock_web/undoform.html", {"header":title, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
     else:
         item = Inventory.objects.get(pk=int(pk))
-        if item.reagent.is_cyto==True:
-##            messages.success(httprequest, "It is currently not possible to undo actions done to cytogenetics reagents using this form. Please contact an Administrator")
-##            return HttpResponseRedirect(reverse("stock_web:item",args=[item.pk]))
-            return render(httprequest, "stock_web/list_item.html", _cyto_context(httprequest, item, "undo"))
+        if item.reagent.track_vol==True:
+            return render(httprequest, "stock_web/list_item.html", _vol_context(httprequest, item, "undo"))
         else:
             return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "undo"))
 
@@ -1433,7 +1431,7 @@ def undoitem(httprequest, task, pk):
     if task in ["delete", "unopen", "reopen","unuse"]:
         form = DeleteForm
         title=["ARE YOU SURE YOU WANT TO {} ITEM {} - {} {}".format(task.upper(), item.internal, item.reagent,"({}µl use)".format(item.last_usage.used) if task=="unuse" else "")]
-        if task=="unopen" and item.reagent.is_cyto==True and item.current_vol!=item.vol_rec:
+        if task=="unopen" and item.reagent.track_vol==True and item.current_vol!=item.vol_rec:
             title+=["THIS WILL REMOVE ALL USES OF THIS REAGENT AND SET ITS VOLUME BACK TO ITS VOLUME RECEIVED"]
         #pdb.set_trace()
         if httprequest.method=="POST":
@@ -1465,19 +1463,19 @@ def undoitem(httprequest, task, pk):
                                 item.date_op=None
                                 item.is_op=0
                                 item.op_user_id=None
-                                if item.reagent.is_cyto:
-                                    item.reagent.count_no+=sum([x.used for x in CytoUsage.objects.filter(item=item)])
+                                if item.reagent.track_vol:
+                                    item.reagent.count_no+=sum([x.used for x in VolUsage.objects.filter(item=item)])
                                     item.reagent.save()
                                     item.last_usage=None
                                     item.current_vol=item.vol_rec
                                     item.save()
-                                    CytoUsage.objects.filter(item=item).delete()
+                                    VolUsage.objects.filter(item=item).delete()
                                 else:
                                     item.reagent.count_no+=1
                                     item.reagent.save()
                                 item.save()
-                            if task=="unuse" and item.reagent.is_cyto==True:
-                                uses=CytoUsage.objects.filter(item=item).order_by("id").reverse()
+                            if task=="unuse" and item.reagent.track_vol==True:
+                                uses=VolUsage.objects.filter(item=item).order_by("id").reverse()
                                 use=item.last_usage
                                 if use.sol is not None:
                                     messages.success(httprequest, "You cannot undo this usage as it was part of solution {}. PLEASE EDIT THIS SOLUTION TO UNDO THIS USAGE".format(Inventory.objects.get(sol=use.sol)))
@@ -1497,7 +1495,7 @@ def undoitem(httprequest, task, pk):
                                 item.save()
                                 use.delete()
                             if task=="delete":
-                                if item.reagent.is_cyto==False:
+                                if item.reagent.track_vol==False:
                                     item.reagent.count_no-=1
                                 else:
                                     item.reagent.count_no-=item.current_vol
@@ -1505,10 +1503,10 @@ def undoitem(httprequest, task, pk):
                                 item.delete()
                                 if item.sol is not None:
                                     sol=item.sol
-                                    if item.reagent.is_cyto==True:
+                                    if item.reagent.track_vol==True:
                                         for i in range(sol.recipe.length()):
                                             comp=eval('sol.comp{}'.format(i+1))
-                                            uses=CytoUsage.objects.filter(item=comp).order_by("id").reverse()
+                                            uses=VolUsage.objects.filter(item=comp).order_by("id").reverse()
                                             last_use=comp.last_usage
                                             if last_use==uses.get(sol=sol):
                                                 try:
