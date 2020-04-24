@@ -64,6 +64,20 @@ class Suppliers(models.Model):
         supplier = cls.objects.create(name=name)
         return supplier
 
+class Projects(models.Model):
+    def __str__(self):
+        return self.name
+    name = models.CharField(max_length=50, unique=True)
+    is_active=models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name_plural = "Projects"
+
+    @classmethod
+    def create(cls, name):
+        project = cls.objects.create(name=name)
+        return project
+
 ##class Storage(models.Model):
 ##    def __str__(self):
 ##        return self.name
@@ -226,6 +240,7 @@ class Inventory(models.Model):
     cond_rec=models.CharField(max_length=2, choices=CONDITION_CHOICES, default=GOOD, verbose_name=u"Condition Received")
     rec_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="1+")
     date_exp=models.DateField(verbose_name=u"Expiry Date")
+    project=models.ForeignKey("Projects", on_delete=models.PROTECT, blank=True, null=True)
     date_op=models.DateField(null=True, blank=True)
     is_op=models.BooleanField(default=False)
     op_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="2+", blank=True, null=True)

@@ -3,7 +3,7 @@ from django import forms
 from django.db.models import F
 from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
-from .models import Suppliers, Reagents, Internal, Recipe, Inventory
+from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Projects
 
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}))
@@ -44,8 +44,9 @@ class NewInvForm(forms.ModelForm):
     num_rec=forms.IntegerField(min_value=1, label="Number Received")
     class Meta:
         model = Inventory
-        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp")
+        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "project")
         widgets = {"supplier":Select2Widget,
+                   "project":Select2Widget,
                    "lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
                    "date_rec":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+1)),
                    "date_exp":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+20)),
@@ -62,6 +63,7 @@ class NewInvForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(NewInvForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
+        self.fields["project"].queryset=Projects.objects.exclude(is_active=False)
 class NewProbeForm(forms.ModelForm):
     class Meta:
         model = Inventory
@@ -156,6 +158,17 @@ class NewSupForm(forms.ModelForm):
         if Suppliers.objects.filter(name=self.cleaned_data["name"]).exists():
             self.add_error("name", forms.ValidationError("A Supplier with the name {} already exists".format(self.cleaned_data["name"])))
 
+class NewProjForm(forms.ModelForm):
+    class Meta:
+        model = Projects
+        fields = "__all__"
+        widgets = {"is_active":forms.HiddenInput}
+    def clean(self):
+        super(NewProjForm, self).clean()
+        if Projects.objects.filter(name=self.cleaned_data["name"]).exists():
+            self.add_error("name", forms.ValidationError("A Project with the name {} already exists".format(self.cleaned_data["name"])))
+
+
 class NewReagentForm(forms.ModelForm):
     class Meta:
         model = Reagents
@@ -229,6 +242,7 @@ class NewRecipeForm(forms.ModelForm):
 class SearchForm(forms.Form):
     reagent=forms.CharField(label="Reagent Name", max_length=30, required=False)
     supplier=forms.CharField(label="Supplier Name", max_length=25, required=False)
+    project=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), widget=Select2Widget)
     lot_no=forms.CharField(label="Lot Number", max_length=20, required=False)
     int_id=forms.CharField(label="Stock Number", max_length=4, required=False)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
@@ -266,6 +280,11 @@ class EditSupForm(forms.Form):
             self.add_error("name", forms.ValidationError("Unable to Deactivate Supplier: {}. The Following Items Have This Supplier as Their Default Supplier:".format(self.cleaned_data["name"])))
             for reagent in Reagents.objects.filter(supplier_def=self.data["name"]):
                 self.add_error("name", forms.ValidationError(reagent))
+
+class EditProjForm(forms.Form):
+    name=forms.ModelChoiceField(queryset = Projects.objects.all().order_by("name"), widget=Select2Widget, label=u"Project")
+
+
 
 class EditReagForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")

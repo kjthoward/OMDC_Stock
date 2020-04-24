@@ -19,11 +19,11 @@ import string
 from .prime import PRIME
 from .email import send, EMAIL
 from .pdf_report import report_gen
-from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage
+from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage, Projects
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
                    EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
-                   StockReportForm, PWResetForm, WitnessForm
+                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -80,6 +80,7 @@ def _toolbar(httprequest, active=""):
                      {"name": "Edit Minimum Stock Levels", "url":reverse("stock_web:changemin",args=["_"])},
                      {"name": "(De)Activate Reagents", "url":reverse("stock_web:activreag")},
                      {"name": "(De)Activate Suppliers", "url":reverse("stock_web:activsup")},
+                     {"name": "(De)Activate Projects", "url":reverse("stock_web:activproj")},
                      {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")},
                      {"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])}]
 
@@ -90,6 +91,7 @@ def _toolbar(httprequest, active=""):
         toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
         new_dropdown = [{"name": "Inventory Item", "url":reverse("stock_web:newinv", args=["_"])},
                         {"name":"Supplier", "url":reverse("stock_web:newsup")},
+                        {"name":"Project", "url":reverse("stock_web:newproj")},
                         {"name":"Reagent", "url":reverse("stock_web:newreagent")},
                         {"name":"Recipe", "url":reverse("stock_web:newrecipe")}]
         toolbar.append(([{"name": "new", "glyphicon": "plus", "dropdown": new_dropdown}],"right"))
@@ -200,6 +202,7 @@ def search(httprequest):
             if form.is_valid():
                 queries = []
                 for key, query in [("reagent", "reagent__name__icontains"), ("supplier", "supplier__name__icontains"),
+                                    ("project", "project__name__icontains"),
                                    ("lot_no", "lot_no__icontains"), ("int_id","internal__batch_number__exact"),
                                    ("in_stock","finished__lte"),
                                   ]:
@@ -341,7 +344,7 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Date Opened", "Days till expired"]
+    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Project", "Date Opened", "Days till expired"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-supplier_id__name"
@@ -352,6 +355,8 @@ def inventory(httprequest, search, what, sortby, page):
                                                      if sortby=="order=date_rec" else "order=date_rec", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-date_exp"
                                                      if sortby=="order=date_exp" else "order=date_exp", 1]),
+                reverse("stock_web:inventory", args=[search, what,"order=-project_id__name"
+                                                     if sortby=="order=project_id__name" else "order=project_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-date_op"
                                                      if sortby=="order=date_op" else "order=date_op",1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-days_rem"
@@ -378,10 +383,12 @@ def inventory(httprequest, search, what, sortby, page):
                   item.internal.batch_number,
                   item.date_rec.strftime("%d/%m/%y"),
                   item.date_exp.strftime("%d/%m/%y"),
+                  item.project.name,
                   item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                   item.days_remaining(),
                   ]
         urls=[reverse("stock_web:item",args=[item.id]),
+              "",
               "",
               "",
               "",
@@ -554,6 +561,9 @@ def _item_context(httprequest, item, undo):
     title_url=["","","",""]
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
+        title_url.append("")
+    if item.project_id is not None:
+        title.append("Project - {}".format(item.project.name))
         title_url.append("")
     if item.po is not None:
         title.append("Purchase Order Number - {}".format(item.po))
@@ -1215,6 +1225,26 @@ def newsup(httprequest):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def newproj(httprequest):
+    form=NewProjForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                Projects.create(form.cleaned_data["name"])
+                messages.info(httprequest, "{} Added".format(form.cleaned_data["name"]))
+                return HttpResponseRedirect(reverse("stock_web:newproj"))
+    else:
+        form = form()
+    submiturl = reverse("stock_web:newproj")
+    cancelurl = reverse("stock_web:listinv")
+    return render(httprequest, "stock_web/form.html", {"header":["New Project Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
+
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def newrecipe(httprequest):
     form=NewRecipeForm
     if httprequest.method=="POST":
@@ -1261,6 +1291,36 @@ def activsup(httprequest):
     toolbar = _toolbar(httprequest, active="Edit Data")
 
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def activproj(httprequest):
+    header = ["Select Project To Toggle Active State - THIS WILL NOT AFFECT EXISTING ITEMS"]
+    form=EditProjForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                if form.cleaned_data["name"].is_active==True:
+                   form.cleaned_data["name"].is_active=False
+                   message="Project {} Has Been Deactivated".format(form.cleaned_data["name"].name)
+                else:
+                    form.cleaned_data["name"].is_active=True
+                    message="Project {} Has Been Reactivated".format(form.cleaned_data["name"].name)
+                form.cleaned_data["name"].save()
+                messages.success(httprequest, message)
+                return HttpResponseRedirect(reverse("stock_web:activproj"))
+    else:
+        form = form()
+
+    submiturl = reverse("stock_web:activproj")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+
+    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
