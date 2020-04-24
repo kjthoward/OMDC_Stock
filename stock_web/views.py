@@ -793,7 +793,7 @@ def useitem(httprequest,pk):
 
                     if EMAIL==True:
                         subject="{} - Stock Level is below minimum level".format(item.reagent.name)
-                        text="<p>Item {} has a stock level of {}µl.<br><br>".format(item.reagent.name,item.reagent.count_no)
+                        text="<p>Item {} (Catalogue number {}) has a stock level of {}µl.<br><br>".format(item.reagent.name, item.reagent.cat_no, item.reagent.count_no)
                         text+="Minimum Stock level for this item is {}µl.<br><br>".format(item.reagent.min_count)
                         for user in User.objects.filter(is_staff=True):
                             if user.email!="":
@@ -839,7 +839,7 @@ def openitem(httprequest, pk):
                                                                                                                                               make))
                         if EMAIL==True:
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)
-                            text="<p>Item {} has a stock level of {}.<br><br>".format(item.reagent.name,item.reagent.count_no)
+                            text="<p>Item {} (Catalogue Number {}) has a stock level of {}.<br><br>".format(item.reagent.name, item.reagent.cat_no, item.reagent.count_no)
                             text+="Minimum Stock level for this item is {}.<br><br>".format(item.reagent.min_count)
                             for user in User.objects.filter(is_staff=True):
                                 if user.email!="":
@@ -909,7 +909,7 @@ def finishitem(httprequest, pk):
                                                                                                                                               make))
                         if EMAIL==True:
                             subject="{} - Stock Level is below minimum level".format(item.reagent.name)
-                            text="<p>Item {} has a stock level of {}.<br><br>".format(item.reagent.name,item.reagent.count_no)
+                            text="<p>Item {} (Catalogue Number {}) has a stock level of {}.<br><br>".format(item.reagent.name,item.reagent.cat_no, item.reagent.count_no)
                             text+="\n\nMinimum Stock level for this item is {}.<br><br>".format(item.reagent.min_count)
                             for user in User.objects.filter(is_staff=True):
                                 if user.email!="":
