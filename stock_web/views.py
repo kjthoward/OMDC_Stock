@@ -601,7 +601,7 @@ def _item_context(httprequest, item, undo):
             headings+=["Action"]
             values+=["Un-open Item"]
             urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-        elif item.sol_id is None:
+        else:
             headings+=["Action"]
             values+=["Validate Item"]
             urls+=[reverse("stock_web:valitem",args=[item.id])]
