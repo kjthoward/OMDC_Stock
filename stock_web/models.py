@@ -217,7 +217,7 @@ class Recipe(models.Model):
 
 class Inventory(models.Model):
     def __str__(self):
-        return "{}, Lot:{}, Batch:{}".format(self.reagent.name, self.lot_no, self.internal)
+        return "{}, Lot:{}, Batch:{}, Project:{}".format(self.reagent.name, self.lot_no, self.internal,self.project)
     class Meta:
         verbose_name_plural = "Inventory Items"
     reagent=models.ForeignKey(Reagents,on_delete=models.PROTECT)
@@ -446,6 +446,7 @@ class Solutions(models.Model):
                     "date_exp":EXP_DATE,
                     "sol":solution,
                     "po":"N/A",
+                    "project":Projects.objects.get(name="INTERNAL"),
                     "reagent":rec.reagent,
                     "supplier":Suppliers.objects.get(name="Internal"),
                     "witness":witness,

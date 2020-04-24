@@ -1,9 +1,10 @@
 from django.db import transaction
 from django.contrib.auth.models import User, Group
-from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage
+from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage, Projects
 
 def PRIME():
     with transaction.atomic():
+        Projects.objects.create(name="INTERNAL")
         User_Mod = Group.objects.create(name="User_Mod")
         perms=['13','14','16','8','5','6','9','10','12']
         for p in perms:
