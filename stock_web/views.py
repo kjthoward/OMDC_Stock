@@ -646,6 +646,7 @@ def _vol_context(httprequest, item, undo):
              "Purchase Order Number - {}".format(item.po),
              "Lot Number - {}".format(item.lot_no) if item.lot_no else "",
              "Stock Number - {}".format(item.internal.batch_number),
+             "Project - {}".format(item.project),
              "Volume Received - {}µl".format(item.vol_rec) if item.sol is None else "Volume Made Up - {}µl".format(item.vol_rec),
              "Current Volume - {}µl".format(item.current_vol if item.current_vol is not None else 0)]
     title_url=["","","","","","",""]
@@ -692,7 +693,7 @@ def _vol_context(httprequest, item, undo):
             headings+=["Action"]
             values+=["Un-open Item"]
             urls+=[reverse("stock_web:undoitem",args=["unopen",item.id])]
-        elif item.sol_id is None and item.last_usage is not None:
+        elif item.last_usage is not None:
             headings+=["Action"]
             values+=["Validate Item"]
             urls+=[reverse("stock_web:valitem",args=[item.id])]
