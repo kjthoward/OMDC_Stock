@@ -327,16 +327,16 @@ class Inventory(models.Model):
             VolUsage.use(item, start_vol,invitem.current_vol, vol,
                         user, sol, date)
     @classmethod
-    def validate(cls, values, reagent_id, lot, user):
-
+    def validate(cls, values, item, lot, user):
         with transaction.atomic():
             val=Validation.new(values["val_date"], values["val_run"].upper(), user)
-            #bulk_update(updates.values(),[item.val_id=val])
-            Inventory.objects.filter(reagent=reagent_id, lot_no=lot).update(val_id=val)
-
-            #for item in items:
-            #    item.val_id=val
-            #Inventory.objects.bulk_update(items,['val_id'])
+            if item.sol is None:
+                Inventory.objects.filter(reagent=item.reagent, lot_no=lot).update(val_id=val)
+            else:
+                Inventory.objects.filter(id=item.id).update(val_id=val)
+                for comp in item.sol.list_comp():
+                    if comp.val is None:
+                        Inventory.objects.filter(reagent=comp.reagent, lot_no=comp.lot_no).update(val_id=val)
     @classmethod
     def finish(cls, values, item, user):
         with transaction.atomic():

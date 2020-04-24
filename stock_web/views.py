@@ -872,7 +872,7 @@ def valitem(httprequest,pk):
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
         else:
             if form.is_valid():
-                Inventory.validate(form.cleaned_data, Inventory.objects.get(pk=int(pk)).reagent, Inventory.objects.get(pk=int(pk)).lot_no, httprequest.user)
+                Inventory.validate(form.cleaned_data, Inventory.objects.get(pk=int(pk)), Inventory.objects.get(pk=int(pk)).lot_no, httprequest.user)
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
         if Inventory.objects.get(pk=int(pk)).val is not None:
