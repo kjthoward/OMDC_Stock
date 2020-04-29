@@ -505,11 +505,12 @@ def invreport(httprequest,what, extension):
 
         if what!="minstock":
             if what=="all":
-                body=[["Reagent", "Supplier", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Supplier", "Project", "Lot Number", "Stock Number", "Received",
                        "Expiry"]]
                 for item in items:
                     body+= [[item.reagent.name,
                               item.supplier.name,
+                              item.project,
                               item.lot_no,
                               item.internal.batch_number,
                               item.date_rec.strftime("%d/%m/%y"),
@@ -517,11 +518,12 @@ def invreport(httprequest,what, extension):
                               ]]
 
             else:
-                body=[["Reagent", "Supplier", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Supplier", "Project", "Lot Number", "Stock Number", "Received",
                        "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
                 for item in items:
                     body+= [[item.reagent.name,
                               item.supplier.name,
+                              item.project,
                               item.lot_no,
                               item.internal.batch_number,
                               item.date_rec.strftime("%d/%m/%y"),
