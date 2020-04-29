@@ -433,12 +433,13 @@ def stockreport(httprequest, pk, extension):
         title="{} - Stock Report".format(Reagents.objects.get(pk=int(pk)))
         #gets items, with open items first, then sorted by expirey date
         items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
-        body=[["Supplier Name", "Lot Number", "Stock Number", "Date Received",
+        body=[["Supplier Name", "Lot Number", "Project", "Stock Number", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
 
         for item in items:
             body+= [[ item.supplier.name,
                       item.lot_no,
+                      item.project,
                       item.internal.batch_number,
                       item.date_rec.strftime("%d/%m/%y"),
                       item.date_exp.strftime("%d/%m/%y"),
