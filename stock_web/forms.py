@@ -242,7 +242,7 @@ class NewRecipeForm(forms.ModelForm):
 class SearchForm(forms.Form):
     reagent=forms.CharField(label="Reagent Name", max_length=30, required=False)
     supplier=forms.CharField(label="Supplier Name", max_length=25, required=False)
-    project=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), widget=Select2Widget)
+    project=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), widget=Select2Widget, required=False)
     lot_no=forms.CharField(label="Lot Number", max_length=20, required=False)
     int_id=forms.CharField(label="Stock Number", max_length=4, required=False)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
