@@ -336,7 +336,7 @@ def inventory(httprequest, search, what, sortby, page):
             items=Inventory.objects.filter(**query)
         if len(items)==1:
             return HttpResponseRedirect(reverse("stock_web:item",args=[items[0].id]))
-    items=items.select_related("supplier","reagent","internal")
+    items=items.select_related("supplier","reagent","internal","project")
     pages=[]
     if len(items)>200:
         for i in range(1, math.ceil(len(items)/200)+1):
@@ -432,7 +432,7 @@ def stockreport(httprequest, pk, extension):
     else:
         title="{} - Stock Report".format(Reagents.objects.get(pk=int(pk)))
         #gets items, with open items first, then sorted by expirey date
-        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
+        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
         body=[["Supplier Name", "Lot Number", "Stock Number", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
 
@@ -488,19 +488,19 @@ def invreport(httprequest,what, extension):
     else:
         if what=="unval":
             title="All Unvalidated Items Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="val":
             title="All Validated Items Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(val_id__gte=0,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(val_id__gte=0,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="exp":
             title="Items Expiring Soon Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="all":
             title="All Items In Stock Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(is_op=False,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(is_op=False,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="allinc":
             title="All Items In Stock Including Open Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
 
         if what!="minstock":
             if what=="all":
@@ -949,7 +949,7 @@ def finishitem(httprequest, pk):
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def item(httprequest, pk):
-    item = Inventory.objects.select_related("supplier","reagent","internal","val").get(pk=int(pk))
+    item = Inventory.objects.select_related("supplier","reagent","internal","val","project").get(pk=int(pk))
     if item.reagent.track_vol==False:
         return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "_"))
     else:
