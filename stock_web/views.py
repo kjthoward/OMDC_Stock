@@ -586,13 +586,13 @@ def projreport(httprequest, pk, extension, fin):
         if fin=="0":
             items=items.exclude(finished=True)
         items.order_by("-finished","-is_op","date_exp")
-        body=[["Supplier Name", "Lot Number", "Stock Number", "Date Received",
+        body=[["Reagent", "Supplier Name", "Lot Number", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run", "Finished"]]
 
         for item in items:
-            body+= [[ item.supplier.name,
+            body+= [[ item.reagent.name,
+                      item.supplier.name,
                       item.lot_no,
-                      item.internal.batch_number,
                       item.date_rec.strftime("%d/%m/%y"),
                       item.date_exp.strftime("%d/%m/%y"),
                       item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
