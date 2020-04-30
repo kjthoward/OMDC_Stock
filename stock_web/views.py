@@ -384,7 +384,7 @@ def inventory(httprequest, search, what, sortby, page):
                   item.internal.batch_number,
                   item.date_rec.strftime("%d/%m/%y"),
                   item.date_exp.strftime("%d/%m/%y"),
-                  item.project.name,
+                  item.project.name if item.project is not None else "",
                   item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                   item.days_remaining(),
                   ]
