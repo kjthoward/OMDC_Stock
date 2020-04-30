@@ -319,6 +319,10 @@ class ChangeMinForm(forms.Form):
 class StockReportForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(count_no__gte=1).order_by("name"), label="Reagent", widget=Select2Widget)
 
+class ProjReportForm(forms.Form):
+    name=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), label="Project", widget=Select2Widget)
+    in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
+
 class InvReportForm(forms.Form):
     report=forms.ChoiceField(label="Select Report To Generate",
                              choices=[("unval","All Unvalidated Items"),

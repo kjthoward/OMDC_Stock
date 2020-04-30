@@ -23,7 +23,7 @@ from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recip
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
                    EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
-                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm
+                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm, ProjReportForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -87,6 +87,7 @@ def _toolbar(httprequest, active=""):
 
     if httprequest.user.is_staff:
         toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"]), "glyphicon":"list"})
+        toolbar[0][0].append({"name":"Project Reports", "url":reverse("stock_web:projreport",args=["_","_","_"]), "glyphicon":"briefcase"})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
         toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
         new_dropdown = [{"name": "Inventory Item", "url":reverse("stock_web:newinv", args=["_"])},
@@ -555,6 +556,66 @@ def invreport(httprequest,what, extension):
             httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format(title)
         return httpresponse
     return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def projreport(httprequest, pk, extension, fin):
+    submiturl = reverse("stock_web:projreport",args=[pk,extension, fin])
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Project Reports")
+    header = "Select Project to Generate Stock Report For"
+    form=ProjReportForm
+    if pk=="_":
+        if httprequest.method=="POST":
+            if "submit" not in httprequest.POST or "Download" not in httprequest.POST["submit"]:
+                return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+            else:
+                form = form(httprequest.POST)
+                if form.is_valid():
+                    if "pdf" in httprequest.POST["submit"]:
+                        return HttpResponseRedirect(reverse("stock_web:projreport", args=[form.cleaned_data["name"].pk,0, form.cleaned_data["in_stock"]]))
+                    elif "xlsx" in httprequest.POST["submit"]:
+                        return HttpResponseRedirect(reverse("stock_web:projreport", args=[form.cleaned_data["name"].pk,1, form.cleaned_data["in_stock"]]))
+        else:
+            form = form()
+
+    else:
+        title="{} - Project Stock Report".format(Projects.objects.get(pk=int(pk)))
+        #gets items, with open items first, then sorted by expirey date
+        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(project_id=int(pk))
+        if fin=="0":
+            items=items.exclude(finished=True)
+        items.order_by("-finished","-is_op","date_exp")
+        body=[["Supplier Name", "Lot Number", "Stock Number", "Date Received",
+               "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run", "Finished"]]
+
+        for item in items:
+            body+= [[ item.supplier.name,
+                      item.lot_no,
+                      item.internal.batch_number,
+                      item.date_rec.strftime("%d/%m/%y"),
+                      item.date_exp.strftime("%d/%m/%y"),
+                      item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
+                      item.op_user.username if item.op_user is not None else "",
+                      item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
+                      item.val.val_run if item.val is not None else "",
+                      item.finished,
+                      ]]
+        if extension=='0':
+            httpresponse = HttpResponse(content_type='application/pdf')
+            httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
+            table=report_gen(body,title,httpresponse,httprequest.user.username)
+
+        if extension=='1':
+            workbook = openpyxl.Workbook()
+            worksheet = workbook.active
+            for row in body:
+                worksheet.append(row)
+            httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
+            httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format(title)
+        return httpresponse
+    return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+
 
 def _item_context(httprequest, item, undo):
     title = ["Reagent - {}".format(item.reagent.name),
