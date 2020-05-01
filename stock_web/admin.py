@@ -26,7 +26,7 @@ admin.site.register(Inventory)
 admin.site.register(Solutions)
 admin.site.register(ForceReset)
 #Changes titles on Admin Site
-admin.site.site_header="Stock (Web) Database Admin Page"
+admin.site.site_header="OMDC Stock (Web) Database Admin Page"
 admin.site.index_title="Stock Administration"
 #Changes the "View site" URL
 admin.site.site_url = "/stock/listinv/"
