@@ -23,7 +23,7 @@ from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recip
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
                    EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
-                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm, ProjReportForm
+                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm, ProjReportForm, RemoveProjForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -82,6 +82,7 @@ def _toolbar(httprequest, active=""):
                      {"name": "(De)Activate Suppliers", "url":reverse("stock_web:activsup")},
                      {"name": "(De)Activate Projects", "url":reverse("stock_web:activproj")},
                      {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")},
+                     {"name": "Remove Project", "url":reverse("stock_web:removeproj")},
                      {"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])}]
 
 
@@ -1524,6 +1525,27 @@ def removesup(httprequest):
     else:
         form = form()
     submiturl = reverse("stock_web:removesup")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+    return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def removeproj(httprequest):
+    header = "Select Project To Remove"
+    form=RemoveProjForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                form.cleaned_data["project"].delete()
+                messages.success(httprequest, "Project {} Has Been Deleted".format(form.cleaned_data["project"].name))
+                return HttpResponseRedirect(reverse("stock_web:listinv"))
+    else:
+        form = form()
+    submiturl = reverse("stock_web:removeproj")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
     return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})

@@ -29,6 +29,7 @@ urlpatterns = [
     re_path(r"^changedef/(.*)/$", views.changedef, name="changedef"),
     re_path(r"^changemin/(.*)/$", views.changemin, name="changemin"),
     re_path(r"^removesup/$", views.removesup, name="removesup"),
+    re_path(r"^removeproj/$", views.removeproj, name="removeproj"),
     re_path(r"^editinv/(.*)/$", views.editinv, name="editinv"),
     re_path(r"^stockreport/(.*)/(.*)/$", views.stockreport, name="stockreport"),
     re_path(r"^invreport/(.*)/(.*)/$", views.invreport, name="invreport"),

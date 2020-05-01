@@ -271,6 +271,14 @@ class RemoveSupForm(forms.Form):
                 self.add_error("supplier", forms.ValidationError(supplier))
             self.add_error("supplier", forms.ValidationError("If you no longer need this supplier try using the '(De)Activate Supplier' Page"))
 
+class RemoveProjForm(forms.Form):
+    project=forms.ModelChoiceField(queryset = Projects.objects.all().exclude(name="INTERNAL").order_by("name"), widget=Select2Widget)
+    def clean(self):
+        super(RemoveProjForm, self).clean()
+        if len(Inventory.objects.filter(project_id=self.data["project"]))>0:
+           self.add_error("project", forms.ValidationError("Unable to Delete Project. {} Inventory Items Exist With This Project".format(len(Inventory.objects.filter(project_id=self.data["project"])))))
+           self.add_error("project", forms.ValidationError("If you no longer need this project try using the '(De)Activate Project' Page"))
+
 class EditSupForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").order_by("name"), widget=Select2Widget, label=u"Supplier")
 
