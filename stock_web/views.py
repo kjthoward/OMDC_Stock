@@ -441,7 +441,7 @@ def stockreport(httprequest, pk, extension):
         for item in items:
             body+= [[ item.supplier.name,
                       item.lot_no,
-                      item.project,
+                      item.project.name if item.project is not None else "",
                       item.internal.batch_number,
                       item.date_rec.strftime("%d/%m/%y"),
                       item.date_exp.strftime("%d/%m/%y"),
@@ -512,7 +512,7 @@ def invreport(httprequest,what, extension):
                 for item in items:
                     body+= [[item.reagent.name,
                               item.supplier.name,
-                              item.project,
+                              item.project.name if item.project is not None else "",
                               item.lot_no,
                               item.internal.batch_number,
                               item.date_rec.strftime("%d/%m/%y"),
@@ -525,7 +525,7 @@ def invreport(httprequest,what, extension):
                 for item in items:
                     body+= [[item.reagent.name,
                               item.supplier.name,
-                              item.project,
+                              item.project.name if item.project is not None else "",
                               item.lot_no,
                               item.internal.batch_number,
                               item.date_rec.strftime("%d/%m/%y"),
