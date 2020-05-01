@@ -37,7 +37,7 @@ def create_profile(sender, instance, created, **kwargs):
         USER=ForceReset.objects.get(user=instance)
         if USER.emailed==False:
             subject="Stock Database account created"
-            text="<p>An account on the Stock Database has been created with the following details:<br><br>"
+            text="<p>An account on the OMDC Stock Database has been created with the following details:<br><br>"
             text+="Username: {}<br><br>".format(instance.username)
             text+="Password: stockdb1<br><br>"
             text+="NOTE - you will be required to change this password when you first log in.<br><br>"
