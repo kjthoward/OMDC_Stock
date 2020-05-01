@@ -714,7 +714,7 @@ def _vol_context(httprequest, item, undo):
              "Project - {}".format(item.project),
              "Volume Received - {}µl".format(item.vol_rec) if item.sol is None else "Volume Made Up - {}µl".format(item.vol_rec),
              "Current Volume - {}µl".format(item.current_vol if item.current_vol is not None else 0)]
-    title_url=["","","","","","",""]
+    title_url=["","","","","","","",""]
     skip=False
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
@@ -1158,28 +1158,40 @@ def createnewsol(httprequest, pk):
             Reagents_set=set(Reagents)
             vols_used={}
             vol_made=""
+            potentials=recipe.liststock()
+            potentials.sort(key=attrgetter("is_op"),reverse=True)
+            comp_vol=any(p.current_vol is not None for p in potentials)
+            witness=None
             if recipe.track_vol==True:
+                vol_made=httprequest.POST.getlist("total_volume")[0]
                 if httprequest.POST.getlist("total_volume")==[""]:
                     messages.success(httprequest, "Total Volume Made Not Entered")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+                witness=User.objects.get(pk=int(form.data["name"]))
+                if witness==httprequest.user:
+                    messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
+                    return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+            if comp_vol==True:
                 if all(v=="" for v in httprequest.POST.getlist("volume")):
                     messages.success(httprequest, "No Volumes Entered")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                potentials=recipe.liststock()
-                potentials.sort(key=attrgetter("is_op"),reverse=True)
+
                 vols=zip(potentials,httprequest.POST.getlist("volume"))
 
                 for vol in vols:
+
                     if vol[1]!="":
                         if str(vol[0].pk) not in httprequest.POST.getlist("requests"):
                             messages.success(httprequest, "Selected Checkmarks and Volume Used boxes do not match")
                             return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
                         else:
                             vols_used[str(vol[0].pk)]=vol[1]
+
                 for req in httprequest.POST.getlist("requests"):
-                    if req not in vols_used.keys():
+                    if req not in vols_used.keys() and Inventory.objects.get(pk=int(req)).current_vol is not None:
                         messages.success(httprequest, "Selected Checkmarks and Volume Used boxes do not match")
                         return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+
                 errors=[]
                 sum_vol=0
                 for item, vol in vols_used.items():
@@ -1190,16 +1202,13 @@ def createnewsol(httprequest, pk):
                 if errors!=[]:
                     messages.success(httprequest, " ".join(errors))
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                vol_made=httprequest.POST.getlist("total_volume")[0]
-                if int(vol_made)<sum_vol:
-                    messages.success(httprequest, "Total Volume of Reagents Used is {}µl. Total Volume made must be at least this volume".format(sum_vol))
-                    return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                witness=User.objects.get(pk=int(form.data["name"]))
-                if witness==httprequest.user:
-                    messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
-                    return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-            else:
-                witness=None
+                if recipe.track_vol==True:
+                    if int(vol_made)<sum_vol:
+                        messages.success(httprequest, "Total Volume of Reagents Used is {}µl. Total Volume made must be at least this volume".format(sum_vol))
+                        return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+
+
+
             if len(Reagents_set)!=recipe.length():
                 if len(Reagents_set)==1:
                     grammar="item was"
@@ -1228,10 +1237,11 @@ def createnewsol(httprequest, pk):
         VOL=[]
         potentials=recipe.liststock()
         potentials.sort(key=attrgetter("is_op"),reverse=True)
-        if recipe.track_vol==False:
+        comp_vol=any(p.current_vol is not None for p in potentials)
+        if comp_vol==False:
             vol=False
             headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Validation Run", "Select"]
-        elif recipe.track_vol==True:
+        elif comp_vol==True:
             vol=True
             headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Current Volume", "Validation Run", "Select", "Volume used (µl)"]
         for p in potentials:
@@ -1244,16 +1254,16 @@ def createnewsol(httprequest, pk):
                   p.date_op if p.date_op is not None else "NOT OPEN",
                   p.val.val_run if p.val is not None else ""]
             if vol==True:
-                temp.insert(-1, "{}µl".format(p.current_vol))
+                temp.insert(-1, "{}µl".format(p.current_vol) if p.current_vol is not None else "N/A")
             values.append(temp)
             inv_ids.append(p.id)
             checked.append("")
-            VOL.append(vol)
+            VOL.append(p.current_vol is not None)
         context = { "headings": headings,
                     "body": zip(values, inv_ids, checked, VOL),
                     "url": reverse("stock_web:createnewsol", args=[pk]),
                     "toolbar": _toolbar(httprequest),
-                    "total":vol,
+                    "total":recipe.track_vol,
                     "identifier":title,
                     "form":form,
                     "cancelurl": reverse("stock_web:newinv",args=["_"]),
