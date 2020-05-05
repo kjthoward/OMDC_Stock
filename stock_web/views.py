@@ -1175,18 +1175,21 @@ def createnewsol(httprequest, pk):
                 if all(v=="" for v in httprequest.POST.getlist("volume")):
                     messages.success(httprequest, "No Volumes Entered")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-
+                #if the first item isn't the track vol, zip gives the first track vol (item #2) to item #1
+                #work around was to give everything that's not track vol a hidden 0, but then those all of those aren't checked so ERRORS
+                #find fix for allowing intended 0+ticked to be counted but not giving "volumes entered doesn't match tick boxes" error...?
                 vols=zip(potentials,httprequest.POST.getlist("volume"))
 
                 for vol in vols:
-
+                    #skips volumes with "a" as a is the value given to hidden volumes so the zip works properly
+                    if vol[1]=="a":
+                        continue
                     if vol[1]!="":
                         if str(vol[0].pk) not in httprequest.POST.getlist("requests"):
                             messages.success(httprequest, "Selected Checkmarks and Volume Used boxes do not match")
                             return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                        else:
+                        elif vol[1]!="0":
                             vols_used[str(vol[0].pk)]=vol[1]
-
                 for req in httprequest.POST.getlist("requests"):
                     if req not in vols_used.keys() and Inventory.objects.get(pk=int(req)).current_vol is not None:
                         messages.success(httprequest, "Selected Checkmarks and Volume Used boxes do not match")
