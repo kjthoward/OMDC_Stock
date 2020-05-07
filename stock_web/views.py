@@ -349,7 +349,7 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Project", "Date Opened", "Days till expired"]
+    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Project", "Storage Location", "Date Opened", "Days till expired"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-supplier_id__name"
@@ -362,6 +362,8 @@ def inventory(httprequest, search, what, sortby, page):
                                                      if sortby=="order=date_exp" else "order=date_exp", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-project_id__name"
                                                      if sortby=="order=project_id__name" else "order=project_id__name", 1]),
+                reverse("stock_web:inventory", args=[search, what,"order=-storage_id__name"
+                                                     if sortby=="order=storage_id__name" else "order=storage_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-date_op"
                                                      if sortby=="order=date_op" else "order=date_op",1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-days_rem"
@@ -389,10 +391,12 @@ def inventory(httprequest, search, what, sortby, page):
                   item.date_rec.strftime("%d/%m/%y"),
                   item.date_exp.strftime("%d/%m/%y"),
                   item.project.name if item.project is not None else "",
+                  item.storage.name if item.storage is not None else "",
                   item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                   item.days_remaining(),
                   ]
         urls=[reverse("stock_web:item",args=[item.id]),
+              "",
               "",
               "",
               "",
