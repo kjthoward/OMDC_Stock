@@ -67,12 +67,13 @@ class NewInvForm(forms.ModelForm):
 class NewProbeForm(forms.ModelForm):
     class Meta:
         model = Inventory
-        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "vol_rec")
+        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "project", "vol_rec")
         widgets = {"lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
                    "date_rec":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+1)),
                    "date_exp":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+20)),
                    "reagent":forms.HiddenInput(),
-                   "current_vol":forms.HiddenInput()}
+                   "current_vol":forms.HiddenInput(),
+                   "project":Select2Widget}
 
     def clean(self):
         super(NewProbeForm, self).clean()
