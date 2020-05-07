@@ -207,7 +207,7 @@ def search(httprequest):
             if form.is_valid():
                 queries = []
                 for key, query in [("reagent", "reagent__name__icontains"), ("supplier", "supplier__name__icontains"),
-                                    ("project", "project__name__icontains"),
+                                    ("project", "project__name__icontains"),("storage", "storage__name__icontains"),
                                    ("lot_no", "lot_no__icontains"), ("int_id","internal__batch_number__exact"),
                                    ("in_stock","finished__lte"),
                                   ]:
