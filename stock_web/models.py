@@ -78,12 +78,18 @@ class Projects(models.Model):
         project = cls.objects.create(name=name)
         return project
 
-##class Storage(models.Model):
-##    def __str__(self):
-##        return self.name
-##    class Meta:
-##        verbose_name_plural = "Storage"
-##    name = models.CharField(max_length=20, unique=True)
+class Storage(models.Model):
+   def __str__(self):
+       return self.name
+   class Meta:
+       verbose_name_plural = "Storage"
+   name = models.CharField(max_length=20, unique=True)
+   is_active=models.BooleanField(default=True)
+
+   @classmethod
+   def create(cls, name):
+       storage = cls.objects.create(name=name)
+       return storage
 
 class Reagents(models.Model):
     def __str__(self):
@@ -94,7 +100,6 @@ class Reagents(models.Model):
     name = models.CharField(max_length=100, unique=True)
     cat_no = models.CharField(max_length=20, blank=True, null=True, verbose_name=u"Catalogue Number")
     supplier_def = models.ForeignKey(Suppliers, on_delete=models.PROTECT, verbose_name=u"Default Supplier")
-    #storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True)
     count_no=models.PositiveIntegerField(default=0)
     min_count=models.PositiveIntegerField(verbose_name=u"Minimum Stock Level")
     recipe=models.ForeignKey("Recipe", on_delete=models.PROTECT, blank=True, null=True)
@@ -236,6 +241,7 @@ class Inventory(models.Model):
     lot_no=models.CharField(max_length=50, verbose_name=u"Lot Number")
     sol=models.ForeignKey("Solutions", on_delete=models.PROTECT, blank=True, null=True)
     po=models.CharField(max_length=20, verbose_name=u"Purchase Order")
+    storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True, verbose_name=u"Storage Location")
     date_rec=models.DateField(default=datetime.date.today, verbose_name=u"Date Received")
     cond_rec=models.CharField(max_length=2, choices=CONDITION_CHOICES, default=GOOD, verbose_name=u"Condition Received")
     rec_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="1+")

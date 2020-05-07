@@ -3,7 +3,7 @@ from django import forms
 from django.db.models import F
 from django.contrib.auth.models import User
 from django_select2.forms import Select2Widget
-from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Projects
+from .models import Suppliers, Reagents, Internal, Recipe, Inventory, Projects, Storage
 
 class LoginForm(forms.Form):
     username = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}))
@@ -44,9 +44,10 @@ class NewInvForm(forms.ModelForm):
     num_rec=forms.IntegerField(min_value=1, label="Number Received")
     class Meta:
         model = Inventory
-        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "project")
+        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "project", "storage")
         widgets = {"supplier":Select2Widget,
                    "project":Select2Widget,
+                   "storage":Select2Widget,
                    "lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
                    "date_rec":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+1)),
                    "date_exp":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+20)),
@@ -64,10 +65,11 @@ class NewInvForm(forms.ModelForm):
         super(NewInvForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
         self.fields["project"].queryset=Projects.objects.exclude(is_active=False)
+        self.fields["storage"].queryset=Storage.objects.exclude(is_active=False)
 class NewProbeForm(forms.ModelForm):
     class Meta:
         model = Inventory
-        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "project", "vol_rec")
+        fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "project", "storage", "vol_rec")
         widgets = {"lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
                    "date_rec":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+1)),
                    "date_exp":MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+20)),
@@ -84,6 +86,8 @@ class NewProbeForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(NewProbeForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
+        self.fields["project"].queryset=Projects.objects.exclude(is_active=False)
+        self.fields["storage"].queryset=Storage.objects.exclude(is_active=False)
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
@@ -169,6 +173,15 @@ class NewProjForm(forms.ModelForm):
         if Projects.objects.filter(name=self.cleaned_data["name"]).exists():
             self.add_error("name", forms.ValidationError("A Project with the name {} already exists".format(self.cleaned_data["name"])))
 
+class NewStoreForm(forms.ModelForm):
+    class Meta:
+        model = Storage
+        fields = "__all__"
+        widgets = {"is_active":forms.HiddenInput}
+    def clean(self):
+        super(NewStoreForm, self).clean()
+        if Storage.objects.filter(name=self.cleaned_data["name"]).exists():
+            self.add_error("name", forms.ValidationError("A Storage Location with the name {} already exists".format(self.cleaned_data["name"])))
 
 class NewReagentForm(forms.ModelForm):
     class Meta:
@@ -280,6 +293,14 @@ class RemoveProjForm(forms.Form):
            self.add_error("project", forms.ValidationError("Unable to Delete Project. {} Inventory Items Exist With This Project".format(len(Inventory.objects.filter(project_id=self.data["project"])))))
            self.add_error("project", forms.ValidationError("If you no longer need this project try using the '(De)Activate Project' Page"))
 
+class RemoveStoreForm(forms.Form):
+    storage=forms.ModelChoiceField(queryset = Storage.objects.all().order_by("name"), widget=Select2Widget)
+    def clean(self):
+        super(RemoveStoreForm, self).clean()
+        if len(Inventory.objects.filter(storage_id=self.data["storage"]))>0:
+           self.add_error("storage", forms.ValidationError("Unable to Delete Storage Location. {} Inventory Items Exist With This Location".format(len(Inventory.objects.filter(storage_id=self.data["storage"])))))
+           self.add_error("storage", forms.ValidationError("If you no longer need this project try using the '(De)Activate Storage Locations' Page"))
+
 class EditSupForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").order_by("name"), widget=Select2Widget, label=u"Supplier")
 
@@ -293,7 +314,8 @@ class EditSupForm(forms.Form):
 class EditProjForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Projects.objects.all().order_by("name"), widget=Select2Widget, label=u"Project")
 
-
+class EditStoreForm(forms.Form):
+    name=forms.ModelChoiceField(queryset = Storage.objects.all().order_by("name"), widget=Select2Widget, label=u"Storage Location")
 
 class EditReagForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")

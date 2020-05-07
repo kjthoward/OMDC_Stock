@@ -13,10 +13,11 @@ from django.utils.translation import gettext, gettext_lazy as _
 from django.template.response import TemplateResponse
 from django import forms
 import pdb
-from .models import Suppliers, Reagents, VolUsage, Internal, Validation, Recipe, Inventory, Solutions, ForceReset, Projects
+from .models import Suppliers, Reagents, VolUsage, Internal, Validation, Recipe, Inventory, Solutions, ForceReset, Projects, Storage
 #Registers models so they can be interacted with in Admin site
 admin.site.register(Suppliers)
 admin.site.register(Projects)
+admin.site.register(Storage)
 admin.site.register(Reagents)
 admin.site.register(Internal)
 admin.site.register(VolUsage)

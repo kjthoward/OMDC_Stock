@@ -19,11 +19,11 @@ import string
 from .prime import PRIME
 from .email import send, EMAIL
 from .pdf_report import report_gen
-from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage, Projects
+from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recipe, Inventory, Solutions, VolUsage, Projects, Storage
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
                    EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
-                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm, ProjReportForm, RemoveProjForm
+                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm, ProjReportForm, RemoveProjForm, NewStoreForm, EditStoreForm, RemoveStoreForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -81,8 +81,10 @@ def _toolbar(httprequest, active=""):
                      {"name": "(De)Activate Reagents", "url":reverse("stock_web:activreag")},
                      {"name": "(De)Activate Suppliers", "url":reverse("stock_web:activsup")},
                      {"name": "(De)Activate Projects", "url":reverse("stock_web:activproj")},
+                     {"name": "(De)Activate Storage Locations", "url":reverse("stock_web:activstore")},
                      {"name": "Remove Suppliers", "url":reverse("stock_web:removesup")},
                      {"name": "Remove Project", "url":reverse("stock_web:removeproj")},
+                     {"name": "Remove Storage Location", "url":reverse("stock_web:removestore")},
                      {"name": "Edit Inventory Item", "url":reverse("stock_web:editinv", args=["_"])}]
 
 
@@ -94,6 +96,7 @@ def _toolbar(httprequest, active=""):
         new_dropdown = [{"name": "Inventory Item", "url":reverse("stock_web:newinv", args=["_"])},
                         {"name":"Supplier", "url":reverse("stock_web:newsup")},
                         {"name":"Project", "url":reverse("stock_web:newproj")},
+                        {"name":"Storage Location", "url":reverse("stock_web:newstore")},
                         {"name":"Reagent", "url":reverse("stock_web:newreagent")},
                         {"name":"Recipe", "url":reverse("stock_web:newrecipe")}]
         toolbar.append(([{"name": "new", "glyphicon": "plus", "dropdown": new_dropdown}],"right"))
@@ -630,6 +633,9 @@ def _item_context(httprequest, item, undo):
     if item.project_id is not None:
         title.append("Project - {}".format(item.project.name))
         title_url.append("")
+    if item.storage is not None:
+        title.append("Location - {}".format(item.storage.name))
+        title_url.append("")
     if item.po is not None:
         title.append("Purchase Order Number - {}".format(item.po))
         title_url.append("")
@@ -718,6 +724,9 @@ def _vol_context(httprequest, item, undo):
     skip=False
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
+        title_url.append("")
+    if item.storage is not None:
+        title.append("Location - {}".format(item.storage.name))
         title_url.append("")
     if item.sol is not None:
         title.append("Witnessed By - {}".format(item.witness))
@@ -1335,6 +1344,25 @@ def newproj(httprequest):
     cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/form.html", {"header":["New Project Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
 
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def newstore(httprequest):
+    form=NewStoreForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                Storage.create(form.cleaned_data["name"])
+                messages.info(httprequest, "Location: {} Added".format(form.cleaned_data["name"]))
+                return HttpResponseRedirect(reverse("stock_web:newstore"))
+    else:
+        form = form()
+    submiturl = reverse("stock_web:newstore")
+    cancelurl = reverse("stock_web:listinv")
+    return render(httprequest, "stock_web/form.html", {"header":["New Storage Location Input"], "form": form, "toolbar": _toolbar(httprequest, active="new"), "submiturl": submiturl, "cancelurl": cancelurl})
+
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
@@ -1413,6 +1441,36 @@ def activproj(httprequest):
     toolbar = _toolbar(httprequest, active="Edit Data")
 
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def activstore(httprequest):
+    header = ["Select Storage Location To Toggle Active State - THIS WILL NOT AFFECT EXISTING ITEMS"]
+    form=EditStoreForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "save":
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                if form.cleaned_data["name"].is_active==True:
+                   form.cleaned_data["name"].is_active=False
+                   message="Location {} Has Been Deactivated".format(form.cleaned_data["name"].name)
+                else:
+                    form.cleaned_data["name"].is_active=True
+                    message="Location {} Has Been Reactivated".format(form.cleaned_data["name"].name)
+                form.cleaned_data["name"].save()
+                messages.success(httprequest, message)
+                return HttpResponseRedirect(reverse("stock_web:activproj"))
+    else:
+        form = form()
+
+    submiturl = reverse("stock_web:activstore")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+
+    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl, "active":"admin"})
+
 
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
@@ -1564,6 +1622,27 @@ def removeproj(httprequest):
     else:
         form = form()
     submiturl = reverse("stock_web:removeproj")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Edit Data")
+    return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def removestore(httprequest):
+    header = "Select Storage Location To Remove"
+    form=RemoveStoreForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or httprequest.POST["submit"] != "search":
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                form.cleaned_data["storage"].delete()
+                messages.success(httprequest, "Storage Location {} Has Been Deleted".format(form.cleaned_data["storage"].name))
+                return HttpResponseRedirect(reverse("stock_web:listinv"))
+    else:
+        form = form()
+    submiturl = reverse("stock_web:removestore")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
     return render(httprequest, "stock_web/undoform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
