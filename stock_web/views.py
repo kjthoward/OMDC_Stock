@@ -1169,10 +1169,13 @@ def createnewsol(httprequest, pk):
                 if httprequest.POST.getlist("total_volume")==[""]:
                     messages.success(httprequest, "Total Volume Made Not Entered")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                witness=User.objects.get(pk=int(form.data["name"]))
-                if witness==httprequest.user:
-                    messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
-                    return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+                try:
+                    witness=User.objects.get(pk=int(form.data["name"]))
+                    if witness==httprequest.user:
+                        messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
+                        return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+                except ValueError:
+                    witness=None
             if comp_vol==True:
                 if all(v=="" for v in httprequest.POST.getlist("volume")):
                     messages.success(httprequest, "No Volumes Entered")

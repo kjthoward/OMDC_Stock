@@ -358,4 +358,4 @@ class PWResetForm(forms.Form):
             self.add_error("user", forms.ValidationError("Username {} does not exist".format(self.cleaned_data["user"])))
 
 class WitnessForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).order_by("username"), widget=Select2Widget, label=u"Select Witness")
+    name=forms.ModelChoiceField(queryset = User.objects.filter(is_active=True).order_by("username"), widget=Select2Widget, label=u"Select Witness", required=False)
