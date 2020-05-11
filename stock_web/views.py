@@ -14,6 +14,7 @@ import openpyxl
 import pdb
 import datetime
 import math
+import csv
 import random
 import string
 from .prime import PRIME
@@ -89,10 +90,15 @@ def _toolbar(httprequest, active=""):
 
 
     if httprequest.user.is_staff:
-        toolbar[0][0].append({"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"]), "glyphicon":"list"})
-        toolbar[0][0].append({"name":"Project Reports", "url":reverse("stock_web:projreport",args=["_","_","_"]), "glyphicon":"briefcase"})
+        toolbar[0][0].pop()
+        reports_dropdown=[{"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"])},
+                           {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"])},
+                           {"name":"Project Reports", "url":reverse("stock_web:projreport",args=["_","_","_"])}]
+
+        toolbar[0][0].append({"name": "Reports", "glyphicon":"download", "dropdown":reports_dropdown})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
         toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
+        toolbar[0][0].append({"name":"Download Label File", "url":reverse("stock_web:label"), "glyphicon":"barcode"})
         new_dropdown = [{"name": "Inventory Item", "url":reverse("stock_web:newinv", args=["_"])},
                         {"name":"Supplier", "url":reverse("stock_web:newsup")},
                         {"name":"Project", "url":reverse("stock_web:newproj")},
@@ -421,7 +427,10 @@ def inventory(httprequest, search, what, sortby, page):
 def stockreport(httprequest, pk, extension):
     submiturl = reverse("stock_web:stockreport",args=[pk,extension])
     cancelurl = reverse("stock_web:listinv")
-    toolbar = _toolbar(httprequest, active="Stock Reports")
+    if httprequest.user.is_staff==True:
+        toolbar = _toolbar(httprequest, active="Reports")
+    else:
+        toolbar = _toolbar(httprequest, active="Stock Reports")
     header = "Select Reagent to Generate Stock Report For"
     form=StockReportForm
     if pk=="_":
@@ -477,7 +486,7 @@ def stockreport(httprequest, pk, extension):
 def invreport(httprequest,what, extension):
     submiturl = reverse("stock_web:invreport",args=[what,extension])
     cancelurl = reverse("stock_web:listinv")
-    toolbar = _toolbar(httprequest, active="Inventory Reports")
+    toolbar = _toolbar(httprequest, active="Reports")
     header = "Select Inventory Report To Generate"
     form=InvReportForm
     if what=="_":
@@ -567,10 +576,38 @@ def invreport(httprequest,what, extension):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def label(httprequest):
+    submiturl = reverse("stock_web:listinv")
+    cancelurl = reverse("stock_web:listinv")
+    toolbar = _toolbar(httprequest, active="Download Label File")
+    header = "Press 'Download' to download the .csv file for all new items"
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST or "Download" not in httprequest.POST["submit"]:
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            items = Inventory.objects.select_related("project","reagent","internal").filter(printed=False)
+            if len(items)==0:
+                messages.success(httprequest, "No items exist that are marked as unprinted")
+                return HttpResponseRedirect(reverse("stock_web:label"))
+            else:
+                response = HttpResponse(content_type='text/csv')
+                response['Content-Disposition'] = 'attachment; filename="Stock_Label_File - {}.csv"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
+                writer = csv.writer(response)
+                for item in items:
+                    writer.writerow([item.reagent.name, item.internal,item.project if item.project is not None else "OMDC"])
+                    item.printed=True
+                    item.save()
+                return response
+    else:
+        pass
+    return render(httprequest, "stock_web/labelform.html", {"header": header, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
+
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def projreport(httprequest, pk, extension, fin):
     submiturl = reverse("stock_web:projreport",args=[pk,extension, fin])
     cancelurl = reverse("stock_web:listinv")
-    toolbar = _toolbar(httprequest, active="Project Reports")
+    toolbar = _toolbar(httprequest, active="Reports")
     header = "Select Project to Generate Stock Report For"
     form=ProjReportForm
     if pk=="_":

@@ -259,6 +259,7 @@ class Inventory(models.Model):
     current_vol=models.PositiveIntegerField(verbose_name=u"Current Volume (µl)", blank=True, null=True)
     last_usage=models.ForeignKey('VolUsage', blank=True, null=True, on_delete=models.PROTECT)
     witness=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="4+", blank=True, null=True)
+    printed=models.BooleanField(default=False, verbose_name=u"Label Download?")
     def days_remaining(self):
         return (self.date_exp-datetime.date.today()).days
 

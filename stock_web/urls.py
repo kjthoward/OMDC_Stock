@@ -41,4 +41,5 @@ urlpatterns = [
     re_path(r"^resetpw/$", views.resetpw, name="resetpw"),
     re_path(r"^forcereset/$", views.forcereset, name="forcereset"),
     re_path(r"^unauth/$", views.unauth, name="unauth"),
+    re_path(r"^label/$", views.label, name="label"),
 ]
