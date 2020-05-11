@@ -73,9 +73,8 @@ def _toolbar(httprequest, active=""):
     toolbar = [([{"name":"Inventory", "dropdown":inventory_dropdown},
                  {"name":"Recipes", "url":reverse("stock_web:recipes"), "glyphicon":"folder-open"},
                  {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"]),"glyphicon":"download"},
+                 {"name":"Download Label File", "url":reverse("stock_web:label"), "glyphicon":"barcode"},
                  ], "left")]
-
-
 
     undo_dropdown = [{"name": "Change Default Supplier", "url":reverse("stock_web:changedef", args=["_"])},
                      {"name": "Edit Minimum Stock Levels", "url":reverse("stock_web:changemin",args=["_"])},
@@ -98,7 +97,6 @@ def _toolbar(httprequest, active=""):
         toolbar[0][0].append({"name": "Reports", "glyphicon":"download", "dropdown":reports_dropdown})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
         toolbar[0][0].append({"name":"Update Users", "url":"/stock/admin/auth/user/","glyphicon":"user"})
-        toolbar[0][0].append({"name":"Download Label File", "url":reverse("stock_web:label"), "glyphicon":"barcode"})
         new_dropdown = [{"name": "Inventory Item", "url":reverse("stock_web:newinv", args=["_"])},
                         {"name":"Supplier", "url":reverse("stock_web:newsup")},
                         {"name":"Project", "url":reverse("stock_web:newproj")},
@@ -574,7 +572,7 @@ def invreport(httprequest,what, extension):
         return httpresponse
     return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(is_logged_in, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def label(httprequest):
     submiturl = reverse("stock_web:listinv")
