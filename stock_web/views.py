@@ -742,7 +742,7 @@ def _item_context(httprequest, item, undo):
             values+=["Re-Open Item"]
             urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
     body = [(zip(values,urls, urls),False)]
-    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "track_vol":False, "label":item.printed}
+    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "track_vol":False, "label": item.printed}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     return context
