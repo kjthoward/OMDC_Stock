@@ -26,7 +26,7 @@ try:
 except:
     SECRET_KEY = ""
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 #Change to server address and name when hosting
 ALLOWED_HOSTS = ['127.0.0.1']
