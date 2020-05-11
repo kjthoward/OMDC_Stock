@@ -72,8 +72,8 @@ def _toolbar(httprequest, active=""):
 
     toolbar = [([{"name":"Inventory", "dropdown":inventory_dropdown},
                  {"name":"Recipes", "url":reverse("stock_web:recipes"), "glyphicon":"folder-open"},
-                 {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"]),"glyphicon":"download"},
                  {"name":"Download Label File", "url":reverse("stock_web:label"), "glyphicon":"barcode"},
+                 {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"]),"glyphicon":"download"},
                  ], "left")]
 
     undo_dropdown = [{"name": "Change Default Supplier", "url":reverse("stock_web:changedef", args=["_"])},
@@ -572,7 +572,7 @@ def invreport(httprequest,what, extension):
         return httpresponse
     return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
-@user_passes_test(is_logged_in, login_url=UNAUTHURL)
+@user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def label(httprequest):
     submiturl = reverse("stock_web:listinv")
@@ -742,7 +742,7 @@ def _item_context(httprequest, item, undo):
             values+=["Re-Open Item"]
             urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
     body = [(zip(values,urls, urls),False)]
-    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "track_vol":False}
+    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "track_vol":False, "label":item.printed}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     return context
@@ -833,7 +833,7 @@ def _vol_context(httprequest, item, undo):
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
     body = [(zip(values,urls, urls),stripe)]
-    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest)}
+    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest),"label":item.printed}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     if item.current_vol<item.vol_rec:
