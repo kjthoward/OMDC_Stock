@@ -1070,6 +1070,12 @@ def finishitem(httprequest, pk):
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def item(httprequest, pk):
     item = Inventory.objects.select_related("supplier","reagent","internal","val","project").get(pk=int(pk))
+    if httprequest.method=="POST":
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="{}_Label_File - {}.csv"'.format(str(item),str(datetime.datetime.today().strftime("%d/%m/%Y")))
+        writer = csv.writer(response)
+        writer.writerow([item.reagent.name, item.internal,item.project if item.project is not None else "OMDC"])
+        return response
     if item.reagent.track_vol==False:
         return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "_"))
     else:
