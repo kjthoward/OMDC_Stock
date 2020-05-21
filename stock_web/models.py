@@ -103,7 +103,7 @@ class Reagents(models.Model):
     count_no=models.PositiveIntegerField(default=0)
     min_count=models.PositiveIntegerField(verbose_name=u"Minimum Stock Level")
     recipe=models.ForeignKey("Recipe", on_delete=models.PROTECT, blank=True, null=True)
-    track_vol=models.BooleanField(default=False, verbose_name=u"Tick to enable volume tracking for this reagent")
+    track_vol=models.BooleanField(default=False, verbose_name=u"Tick to enable volume tracking for this reagent. If the volume of the item is tracked, stock numbers are in µl")
     is_active=models.BooleanField(default=True)
 
     @classmethod
@@ -175,7 +175,7 @@ class Recipe(models.Model):
     comp10=models.ForeignKey(Reagents, blank=True, null=True, on_delete=models.PROTECT, verbose_name=u"component 10", related_name="component10")
     reagent=models.ForeignKey(Reagents, blank=True, null=True, on_delete=models.PROTECT, verbose_name=u"Reagent ID", related_name="Reagent_ID")
     shelf_life=models.PositiveIntegerField(verbose_name=u"Shelf Life (Months)")
-    track_vol=models.BooleanField(default=False, verbose_name=u"Tick to enable volume tracking for this recipe")
+    track_vol=models.BooleanField(default=False, verbose_name=u"Tick to enable volume tracking for this recipe. If the volume of the item is tracked, stock numbers are in µl")
 
     @classmethod
     def create(cls, values):
