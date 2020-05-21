@@ -21,7 +21,10 @@
     <form action="{{ submiturl }}" method="post">
       {% csrf_token %}
       <fieldset><legend>{{ heading }}</legend>
-
+        {% for hidden_field in form.hidden_fields %}
+        {{ hidden_field.errors }}
+        {{ hidden_field }}
+        {% endfor %}
             {% for field in form.visible_fields %}
             <tr{% if field.errors %} class="errors" {% endif%}>
             <th>
