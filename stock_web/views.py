@@ -495,7 +495,7 @@ def stockreport(httprequest, pk, extension):
             for row in body:
                 worksheet.append(row)
             httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
-            httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format(title)
+            httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format("_".join(title.split()))
         return httpresponse
     return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
@@ -581,7 +581,7 @@ def invreport(httprequest,what, extension):
             for row in body:
                 worksheet.append(row)
             httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
-            httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format(title)
+            httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format("_".join(title.split()))
         return httpresponse
     return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
@@ -669,7 +669,7 @@ def projreport(httprequest, pk, extension, fin):
             for row in body:
                 worksheet.append(row)
             httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
-            httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format(title)
+            httpresponse['Content-Disposition'] = 'attachment; filename={}.xlsx'.format("_".join(title.split()))
         return httpresponse
     return render(httprequest, "stock_web/reportform.html", {"header": header, "form": form, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
 
