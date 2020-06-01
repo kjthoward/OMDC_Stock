@@ -362,8 +362,7 @@ class InvReportForm(forms.Form):
                                       ("val","All Validated Items"),
                                       ("exp","Items Expiring Soon"),
                                       ("all","All In-Stock Items"),
-                                      ("allinc","All In-Stock Items (Including Open Items)"),
-                                      ("minstock","All Items Below Minimum Stock Level")])
+                                      ("allinc","All In-Stock Items (Including Open Items)")])
     def clean(self):
         super(InvReportForm, self).clean()
         if self.cleaned_data["report"]=="minstock":

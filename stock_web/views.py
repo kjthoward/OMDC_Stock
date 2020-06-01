@@ -74,6 +74,7 @@ def _toolbar(httprequest, active=""):
                  {"name":"Recipes", "url":reverse("stock_web:recipes"), "glyphicon":"folder-open"},
                  {"name":"Download Label File", "url":reverse("stock_web:label"), "glyphicon":"barcode"},
                  {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"]),"glyphicon":"download"},
+                 {"name":"Items to Order", "url":reverse("stock_web:toorder"),"glyphicon":"gbp"},
                  ], "left")]
 
     undo_dropdown = [{"name": "Change Default Supplier", "url":reverse("stock_web:changedef", args=["_"])},
@@ -90,9 +91,11 @@ def _toolbar(httprequest, active=""):
 
     if httprequest.user.is_staff:
         toolbar[0][0].pop()
+        toolbar[0][0].pop()
         reports_dropdown=[{"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"])},
                            {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"])},
-                           {"name":"Project Reports", "url":reverse("stock_web:projreport",args=["_","_","_"])}]
+                           {"name":"Project Reports", "url":reverse("stock_web:projreport",args=["_","_","_"])},
+                           {"name":"Items to Order", "url":reverse("stock_web:toorder")},]
 
         toolbar[0][0].append({"name": "Reports", "glyphicon":"download", "dropdown":reports_dropdown})
         toolbar[0][0].append({"name":"Edit Data", "dropdown":undo_dropdown, "glyphicon":"wrench"})
@@ -422,6 +425,22 @@ def inventory(httprequest, search, what, sortby, page):
 
 @user_passes_test(is_logged_in, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def toorder(httprequest):
+    low_reagents=Reagents.objects.filter(count_no__lt=F("min_count")).exclude(name="INTERNAL")
+    if len(low_reagents)==0:
+        messages.success(httprequest, "No items are in need of ordering")
+        return HttpResponseRedirect(httprequest.META.get('HTTP_REFERER', '/'))
+    else:
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="Items_To_Order_Report_{}.csv"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
+        writer = csv.writer(response)
+        writer.writerow(["Item", "Default Supplier", "Default Supplier Catalogue Number", "Amount to Order"])
+        for item in low_reagents:
+            writer.writerow([item.name, item.supplier_def.name, item.cat_no, int(item.min_count)-int(item.count_no)])
+        return response
+
+@user_passes_test(is_logged_in, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def stockreport(httprequest, pk, extension):
     submiturl = reverse("stock_web:stockreport",args=[pk,extension])
     cancelurl = reverse("stock_web:listinv")
@@ -520,46 +539,37 @@ def invreport(httprequest,what, extension):
             title="All Items In Stock Including Open Report"
             items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project_used", "project").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
 
-        if what!="minstock":
-            if what=="all":
-                body=[["Reagent", "Supplier", "Project", "Used by Project", "Lot Number", "Stock Number", "Received",
-                       "Expiry"]]
-                for item in items:
-                    body+= [[item.reagent.name,
-                              item.supplier.name,
-                              item.project.name if item.project_id is not None else "",
-                              item.project_used.name if item.project_used_id is not None else "",
-                              item.lot_no,
-                              item.internal.batch_number,
-                              item.date_rec.strftime("%d/%m/%y"),
-                              item.date_exp.strftime("%d/%m/%y"),
-                              ]]
-
-            else:
-                body=[["Reagent", "Supplier", "Project", "Used by Project", "Lot Number", "Stock Number", "Received",
-                       "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
-                for item in items:
-                    body+= [[item.reagent.name,
-                              item.supplier.name,
-                              item.project.name if item.project is not None else "",
-                              item.project_used.name if item.project_used_id is not None else "",
-                              item.lot_no,
-                              item.internal.batch_number,
-                              item.date_rec.strftime("%d/%m/%y"),
-                              item.date_exp.strftime("%d/%m/%y"),
-                              item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
-                              item.op_user.username if item.op_user is not None else "",
-                              item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
-                              item.val.val_run if item.val is not None else "",
-                              ]]
-        elif what=="minstock":
-            title="Items Below Their Minimum Stock Levels"
-            items=Reagents.objects.filter(count_no__lt=F("min_count")).order_by("name")
-            body=[["Reagent", "Number In Stock", "Minimum Stock Level"]]
+        if what=="all":
+            body=[["Reagent", "Supplier", "Project", "Used by Project", "Lot Number", "Stock Number", "Received",
+                   "Expiry"]]
             for item in items:
-                body+= [[item.name,
-                         "{}µl".format(item.count_no) if item.track_vol==True else item.count_no,
-                         "{}µl".format(item.min_count) if item.track_vol==True else item.min_count]]
+                body+= [[item.reagent.name,
+                          item.supplier.name,
+                          item.project.name if item.project_id is not None else "",
+                          item.project_used.name if item.project_used_id is not None else "",
+                          item.lot_no,
+                          item.internal.batch_number,
+                          item.date_rec.strftime("%d/%m/%y"),
+                          item.date_exp.strftime("%d/%m/%y"),
+                          ]]
+
+        else:
+            body=[["Reagent", "Supplier", "Project", "Used by Project", "Lot Number", "Stock Number", "Received",
+                   "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
+            for item in items:
+                body+= [[item.reagent.name,
+                          item.supplier.name,
+                          item.project.name if item.project is not None else "",
+                          item.project_used.name if item.project_used_id is not None else "",
+                          item.lot_no,
+                          item.internal.batch_number,
+                          item.date_rec.strftime("%d/%m/%y"),
+                          item.date_exp.strftime("%d/%m/%y"),
+                          item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
+                          item.op_user.username if item.op_user is not None else "",
+                          item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
+                          item.val.val_run if item.val is not None else "",
+                          ]]
         if extension=='0':
             httpresponse = HttpResponse(content_type='application/pdf')
             httpresponse['Content-Disposition'] = 'attachment; filename="{}.pdf"'.format(title)
