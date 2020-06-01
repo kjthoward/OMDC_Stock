@@ -345,7 +345,7 @@ def inventory(httprequest, search, what, sortby, page):
             items=Inventory.objects.filter(**query)
         if len(items)==1:
             return HttpResponseRedirect(reverse("stock_web:item",args=[items[0].id]))
-    items=items.select_related("supplier","reagent","internal","project")
+    items=items.select_related("supplier","reagent","internal","project","project_used")
     pages=[]
     if len(items)>200:
         for i in range(1, math.ceil(len(items)/200)+1):
@@ -448,14 +448,15 @@ def stockreport(httprequest, pk, extension):
     else:
         title="{} - Stock Report".format(Reagents.objects.get(pk=int(pk)))
         #gets items, with open items first, then sorted by expirey date
-        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
-        body=[["Supplier Name", "Lot Number", "Project", "Stock Number", "Date Received",
+        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project", "project_used").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
+        body=[["Supplier Name", "Lot Number", "Project Assigned", "Used by Project", "Stock Number", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
 
         for item in items:
             body+= [[ item.supplier.name,
                       item.lot_no,
                       item.project.name if item.project is not None else "",
+                      item.project_used.name if item.project_used_id is not None else "",
                       item.internal.batch_number,
                       item.date_rec.strftime("%d/%m/%y"),
                       item.date_exp.strftime("%d/%m/%y"),
@@ -505,28 +506,29 @@ def invreport(httprequest,what, extension):
     else:
         if what=="unval":
             title="All Unvalidated Items Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project_used", "project").filter(val_id=None,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="val":
             title="All Validated Items Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(val_id__gte=0,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project_used", "project").filter(val_id__gte=0,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="exp":
             title="Items Expiring Soon Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project_used", "project").filter(date_exp__lte=datetime.datetime.now()+datetime.timedelta(days=42),finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="all":
             title="All Items In Stock Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(is_op=False,finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project_used", "project").filter(is_op=False,finished=False).order_by("reagent_id__name","-is_op","date_exp")
         elif what=="allinc":
             title="All Items In Stock Including Open Report"
-            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
+            items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project_used", "project").filter(finished=False).order_by("reagent_id__name","-is_op","date_exp")
 
         if what!="minstock":
             if what=="all":
-                body=[["Reagent", "Supplier", "Project", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Supplier", "Project", "Used by Project", "Lot Number", "Stock Number", "Received",
                        "Expiry"]]
                 for item in items:
                     body+= [[item.reagent.name,
                               item.supplier.name,
-                              item.project.name if item.project is not None else "",
+                              item.project.name if item.project_id is not None else "",
+                              item.project_used.name if item.project_used_id is not None else "",
                               item.lot_no,
                               item.internal.batch_number,
                               item.date_rec.strftime("%d/%m/%y"),
@@ -534,12 +536,13 @@ def invreport(httprequest,what, extension):
                               ]]
 
             else:
-                body=[["Reagent", "Supplier", "Project", "Lot Number", "Stock Number", "Received",
+                body=[["Reagent", "Supplier", "Project", "Used by Project", "Lot Number", "Stock Number", "Received",
                        "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
                 for item in items:
                     body+= [[item.reagent.name,
                               item.supplier.name,
                               item.project.name if item.project is not None else "",
+                              item.project_used.name if item.project_used_id is not None else "",
                               item.lot_no,
                               item.internal.batch_number,
                               item.date_rec.strftime("%d/%m/%y"),
@@ -583,7 +586,7 @@ def label(httprequest):
         if "submit" not in httprequest.POST or "Download" not in httprequest.POST["submit"]:
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
         else:
-            items = Inventory.objects.select_related("project","reagent","internal").filter(printed=False)
+            items = Inventory.objects.select_related("project", "project_used", "reagent","internal").filter(printed=False)
             if len(items)==0:
                 messages.success(httprequest, "No items exist that are marked as unprinted")
                 return HttpResponseRedirect(reverse("stock_web:label"))
@@ -625,12 +628,12 @@ def projreport(httprequest, pk, extension, fin):
     else:
         title="{} - Project Stock Report".format(Projects.objects.get(pk=int(pk)))
         #gets items, with open items first, then sorted by expirey date
-        items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user").filter(project_id=int(pk))
+        items = Inventory.objects.select_related("supplier","reagent", "project_used", "project", "internal","val","op_user").filter(project_id=int(pk))
         if fin=="0":
             items=items.exclude(finished=True)
         items.order_by("-finished","-is_op","date_exp")
         body=[["Reagent", "Supplier Name", "Lot Number", "Date Received",
-               "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run", "Finished"]]
+               "Expiry Date", "Date Open", "Opened By", "Project Used", "Date Validated", "Validation Run", "Finished"]]
 
         for item in items:
             body+= [[ item.reagent.name,
@@ -640,6 +643,7 @@ def projreport(httprequest, pk, extension, fin):
                       item.date_exp.strftime("%d/%m/%y"),
                       item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                       item.op_user.username if item.op_user is not None else "",
+                      item.project_used if item.project_used_id is not None else "",
                       item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
                       item.val.val_run if item.val is not None else "",
                       item.finished,
@@ -671,6 +675,9 @@ def _item_context(httprequest, item, undo):
         title_url.append("")
     if item.project_id is not None:
         title.append("Project - {}".format(item.project.name))
+        title_url.append("")
+    if item.project_used_id is not None:
+        title.append("Used By Project - {}".format(item.project_used.name))
         title_url.append("")
     if item.storage is not None:
         title.append("Location - {}".format(item.storage.name))
@@ -756,13 +763,18 @@ def _vol_context(httprequest, item, undo):
              "Purchase Order Number - {}".format(item.po),
              "Lot Number - {}".format(item.lot_no) if item.lot_no else "",
              "Stock Number - {}".format(item.internal.batch_number),
-             "Project - {}".format(item.project),
              "Volume Received - {}µl".format(item.vol_rec) if item.sol is None else "Volume Made Up - {}µl".format(item.vol_rec),
              "Current Volume - {}µl".format(item.current_vol if item.current_vol is not None else 0)]
     title_url=["","","","","","","",""]
     skip=False
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
+        title_url.append("")
+    if item.project_id is not None:
+        title.append("Project - {}".format(item.project.name))
+        title_url.append("")
+    if item.project_used_id is not None:
+        title.append("Used By Project - {}".format(item.project_used.name))
         title_url.append("")
     if item.storage is not None:
         title.append("Location - {}".format(item.storage.name))
@@ -971,7 +983,7 @@ def openitem(httprequest, pk):
     else:
         if item.is_op==True:
             return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
-        form=form(instance=item,initial = {"date_op":datetime.datetime.now()})
+        form=form(instance=item,initial = {"date_op":datetime.datetime.now(),"project":item.project})
     submiturl = reverse("stock_web:openitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
@@ -1068,7 +1080,7 @@ def finishitem(httprequest, pk):
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def item(httprequest, pk):
-    item = Inventory.objects.select_related("supplier","reagent","internal","val","project").get(pk=int(pk))
+    item = Inventory.objects.select_related("supplier","reagent", "project_used", "project", "internal","val","project").get(pk=int(pk))
     if httprequest.method=="POST":
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="{}_Label_File - {}.csv"'.format(str(item),str(datetime.datetime.today().strftime("%d/%m/%Y")))
@@ -1762,6 +1774,7 @@ def undoitem(httprequest, task, pk):
                                 item.date_op=None
                                 item.is_op=0
                                 item.op_user_id=None
+                                item.project_used=None
                                 if item.reagent.track_vol:
                                     item.reagent.count_no+=sum([x.used for x in VolUsage.objects.filter(item=item)])
                                     item.reagent.save()

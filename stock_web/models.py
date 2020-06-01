@@ -246,7 +246,8 @@ class Inventory(models.Model):
     cond_rec=models.CharField(max_length=2, choices=CONDITION_CHOICES, default=GOOD, verbose_name=u"Condition Received")
     rec_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="1+")
     date_exp=models.DateField(verbose_name=u"Expiry Date")
-    project=models.ForeignKey("Projects", on_delete=models.PROTECT, blank=True, null=True)
+    project=models.ForeignKey("Projects", on_delete=models.PROTECT, blank=True, null=True, verbose_name=u"Project Entered", related_name="Project Entered+")
+    project_used=models.ForeignKey("Projects", on_delete=models.PROTECT, blank=True, null=True, verbose_name=u"Project Used", related_name="Project Used+")
     date_op=models.DateField(null=True, blank=True)
     is_op=models.BooleanField(default=False)
     op_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="2+", blank=True, null=True)
@@ -310,6 +311,7 @@ class Inventory(models.Model):
                 reagent.save()
             invitem=Inventory.objects.get(id=item)
             invitem.date_op=values["date_op"]
+            invitem.project_used=values["project"]
             invitem.op_user=user
             invitem.is_op=True
             invitem.save()

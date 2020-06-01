@@ -28,7 +28,7 @@ def report_gen(body, title, httpresponse, user):
         #pdb.set_trace()
         canvas.restoreState()
     TABLE=Table(data=body, repeatRows=1)
-    TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 8),
+    TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 6),
                                ('ALIGN', (0, 0), (-1, -1), "CENTER")]))
     table=[]
     table.append(TABLE)

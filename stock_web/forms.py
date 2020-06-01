@@ -112,6 +112,7 @@ class UseItemForm(forms.ModelForm):
 
 class OpenItemForm(forms.ModelForm):
     date_op = forms.DateField(widget=MySelectDateWidget(years=range(datetime.datetime.today().year-1,datetime.datetime.today().year+5)), label=u"Date Open")
+    project=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), widget=Select2Widget, required=False)
     class Meta:
         model = Inventory
         fields = ("date_rec",)
@@ -287,7 +288,7 @@ class RemoveSupForm(forms.Form):
             self.add_error("supplier", forms.ValidationError("If you no longer need this supplier try using the '(De)Activate Supplier' Page"))
 
 class RemoveProjForm(forms.Form):
-    project=forms.ModelChoiceField(queryset = Projects.objects.all().exclude(name="INTERNAL").order_by("name"), widget=Select2Widget)
+    project=forms.ModelChoiceField(queryset = Projects.objects.all().exclude(name="INTERNAL").exclude(is_active=False).order_by("name"), widget=Select2Widget)
     def clean(self):
         super(RemoveProjForm, self).clean()
         if len(Inventory.objects.filter(project_id=self.data["project"]))>0:
