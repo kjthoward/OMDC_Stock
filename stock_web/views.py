@@ -1117,11 +1117,7 @@ def item(httprequest, pk):
         # response['Content-Disposition'] = 'attachment; filename="{}_Label_File - {}.csv"'.format(str(item),str(datetime.datetime.today().strftime("%d/%m/%Y")))
         # writer = csv.writer(response)
         # writer.writerow([item.reagent.name, item.internal,item.project if item.project is not None else "OMDC"])
-<<<<<<< HEAD
         return httpresponse
-=======
-        return response
->>>>>>> 4c6297ff6d7df454b7a282a774088fd05fac26d4
     if item.reagent.track_vol==False:
         return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "_"))
     else:
