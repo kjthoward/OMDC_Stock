@@ -241,6 +241,7 @@ def loginview(httprequest):
 
             if form.is_valid():
                 user = authenticate(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
+                import pdb; pdb.set_trace()
                 if user is not None and user.is_active:
                     login(httprequest, user)
                     if ForceReset.objects.get(user=httprequest.user.pk).force_password_change==True:
@@ -248,6 +249,9 @@ def loginview(httprequest):
                         return HttpResponseRedirect(reverse("stock_web:change_password"))
                     else:
                         return HttpResponseRedirect(reverse("stock_web:listinv"))
+
+                elif user is None:
+                    messages.success(httprequest,"Incorrect login details provided")
             else:
                 pdb.set_trace()
 
