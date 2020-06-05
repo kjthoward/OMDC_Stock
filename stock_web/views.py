@@ -591,7 +591,7 @@ def label(httprequest):
     submiturl = reverse("stock_web:listinv")
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Download Label File")
-    header = "Press 'Download' to download the .csv file for all new items"
+    header = "Press 'Download' to download the Excel file for all new items"
     if httprequest.method=="POST":
         if "submit" not in httprequest.POST or "Download" not in httprequest.POST["submit"]:
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
@@ -601,14 +601,22 @@ def label(httprequest):
                 messages.success(httprequest, "No items exist that are marked as unprinted")
                 return HttpResponseRedirect(reverse("stock_web:label"))
             else:
-                response = HttpResponse(content_type='text/csv')
-                response['Content-Disposition'] = 'attachment; filename="Stock_Label_File - {}.csv"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
-                writer = csv.writer(response)
+                workbook = openpyxl.Workbook()
+                worksheet = workbook.active
                 for item in items:
-                    writer.writerow([item.reagent.name, item.internal,item.project if item.project is not None else "OMDC"])
-                    item.printed=True
-                    item.save()
-                return response
+                    worksheet.append([item.reagent.name, item.project.name if item.project is not None else "OMDC", item.date_rec, item.internal.batch_number])
+                httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
+                httpresponse['Content-Disposition'] = 'attachment; filename="Stock_Label_File - {}.xlsx"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
+
+                #OLD CSV, Keeping incase need to change back
+                # response = HttpResponse(content_type='text/csv')
+                # response['Content-Disposition'] = 'attachment; filename="Stock_Label_File - {}.csv"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
+                # writer = csv.writer(response)
+                # for item in items:
+                #     writer.writerow([item.reagent.name, item.internal,item.project if item.project is not None else "OMDC"])
+                #     item.printed=True
+                #     item.save()
+                return httpresponse
     else:
         pass
     return render(httprequest, "stock_web/labelform.html", {"header": header, "toolbar": toolbar, "submiturl": submiturl, "cancelurl": cancelurl})
