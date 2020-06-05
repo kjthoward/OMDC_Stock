@@ -241,7 +241,6 @@ def loginview(httprequest):
 
             if form.is_valid():
                 user = authenticate(username=form.cleaned_data["username"], password=form.cleaned_data["password"])
-                import pdb; pdb.set_trace()
                 if user is not None and user.is_active:
                     login(httprequest, user)
                     if ForceReset.objects.get(user=httprequest.user.pk).force_password_change==True:
@@ -1106,11 +1105,19 @@ def finishitem(httprequest, pk):
 def item(httprequest, pk):
     item = Inventory.objects.select_related("supplier","reagent", "project_used", "project", "internal","val","project").get(pk=int(pk))
     if httprequest.method=="POST":
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="{}_Label_File - {}.csv"'.format(str(item),str(datetime.datetime.today().strftime("%d/%m/%Y")))
-        writer = csv.writer(response)
-        writer.writerow([item.reagent.name, item.internal,item.project if item.project is not None else "OMDC"])
-        return response
+
+        workbook = openpyxl.Workbook()
+        worksheet = workbook.active
+        worksheet.append([item.reagent.name, item.project.name if item.project is not None else "OMDC", item.date_rec, item.internal.batch_number])
+        httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
+        httpresponse['Content-Disposition'] = 'attachment; filename="{}_Label_File - {}.xlsx"'.format(str(item),str(datetime.datetime.today().strftime("%d/%m/%Y")))
+
+        #old csv label style
+        # response = HttpResponse(content_type='text/csv')
+        # response['Content-Disposition'] = 'attachment; filename="{}_Label_File - {}.csv"'.format(str(item),str(datetime.datetime.today().strftime("%d/%m/%Y")))
+        # writer = csv.writer(response)
+        # writer.writerow([item.reagent.name, item.internal,item.project if item.project is not None else "OMDC"])
+        return httpresponse
     if item.reagent.track_vol==False:
         return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "_"))
     else:
