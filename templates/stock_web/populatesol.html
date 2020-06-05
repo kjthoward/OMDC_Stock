@@ -27,7 +27,8 @@
             </tr>
             {% endfor %}
         </table>
-		{% if total %}<p>{{ form }}</p>
+    <p>{{ form }}</p>
+    {% if total %}
 		<b>Total Volume Made (µl):</b>
 		<input type="number" name="total_volume"/>
 		<div class="row">

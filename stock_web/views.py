@@ -696,6 +696,8 @@ def _item_context(httprequest, item, undo):
         title.append("Purchase Order Number - {}".format(item.po))
         title_url.append("")
     if item.sol is not None and undo!="undo":
+        title.append("Witnessed By - {}".format(item.witness))
+        title_url.append("")
         for comp in item.sol.list_comp():
             title.append(comp)
             title_url.append(reverse("stock_web:item",args=[comp.id]))
@@ -1241,18 +1243,18 @@ def createnewsol(httprequest, pk):
             potentials.sort(key=attrgetter("is_op"),reverse=True)
             comp_vol=any(p.current_vol is not None for p in potentials)
             witness=None
+            try:
+                witness=User.objects.get(pk=int(form.data["name"]))
+                if witness==httprequest.user:
+                    messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
+                    return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
+            except ValueError:
+                witness=None
             if recipe.track_vol==True:
                 vol_made=httprequest.POST.getlist("total_volume")[0]
                 if httprequest.POST.getlist("total_volume")==[""]:
                     messages.success(httprequest, "Total Volume Made Not Entered")
                     return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                try:
-                    witness=User.objects.get(pk=int(form.data["name"]))
-                    if witness==httprequest.user:
-                        messages.success(httprequest, "YOU MAY NOT USE YOURSELF AS A WITNESS")
-                        return HttpResponseRedirect(reverse("stock_web:createnewsol",args=[pk]))
-                except ValueError:
-                    witness=None
             if comp_vol==True:
                 if all(v=="" for v in httprequest.POST.getlist("volume")):
                     messages.success(httprequest, "No Volumes Entered")
@@ -1325,10 +1327,10 @@ def createnewsol(httprequest, pk):
         comp_vol=any(p.current_vol is not None for p in potentials)
         if comp_vol==False:
             vol=False
-            headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Validation Run", "Select"]
+            headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Validation Run", "Select", ""]
         elif comp_vol==True:
             vol=True
-            headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Current Volume", "Validation Run", "Select", "Volume used (µl)"]
+            headings = ["Reagent Name", "Supplier", "Expiry Date", "Stock Number", "Lot Number", "Date Open", "Current Volume", "Validation Run", "Select", "Volume used (µl)", ""]
         for p in potentials:
             #temp used so that can make array for that item, then insert if it's volume is tracked
             temp=[p.reagent.name,
