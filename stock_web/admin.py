@@ -70,7 +70,6 @@ class CustomUserAdmin(UserAdmin):
 
             if "change" in request.path:
                 disabled_fields = {
-                'username',
                 'is_superuser',
             }
             else:
