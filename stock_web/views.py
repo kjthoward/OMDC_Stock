@@ -437,9 +437,16 @@ def toorder(httprequest):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="Items_To_Order_Report_{}.csv"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
         writer = csv.writer(response)
-        writer.writerow(["Item", "Default Supplier", "Default Supplier Catalogue Number", "Amount to Order"])
+        writer.writerow(["Item", "Project Last Used By", "Default Supplier", "Default Supplier Catalogue Number", "Amount to Order"])
         for item in low_reagents:
-            writer.writerow([item.name, item.supplier_def.name, item.cat_no, int(item.min_count)-int(item.count_no)])
+            last_open=Inventory.objects.filter(reagent=item).order_by("date_op").reverse()[0]
+            try:
+                project_last_used=last_open.project_used.name
+            except:
+                project_last_used=None
+            if project_last_used==None:
+                project_last_used="N/A"
+            writer.writerow([item.name, project_last_used, item.supplier_def.name, item.cat_no, int(item.min_count)-int(item.count_no)])
         return response
 
 @user_passes_test(is_logged_in, login_url=UNAUTHURL)
