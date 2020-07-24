@@ -615,6 +615,8 @@ def label(httprequest):
                 worksheet = workbook.active
                 for item in items:
                     worksheet.append([item.reagent.name, item.project.name if item.project is not None else "OMDC", item.date_rec, item.internal.batch_number])
+                    item.printed=True
+                    item.save()
                 httpresponse = HttpResponse(content=openpyxl.writer.excel.save_virtual_workbook(workbook), content_type='application/ms-excel')
                 httpresponse['Content-Disposition'] = 'attachment; filename="Stock_Label_File - {}.xlsx"'.format(str(datetime.datetime.today().strftime("%d/%m/%Y")))
 
