@@ -1,6 +1,6 @@
 import datetime
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import landscape, A4
 from reportlab.platypus import  BaseDocTemplate, Paragraph, Table, TableStyle, Frame, PageTemplate
 from .version import __version__
 
@@ -28,11 +28,11 @@ def report_gen(body, title, httpresponse, user):
         #pdb.set_trace()
         canvas.restoreState()
     TABLE=Table(data=body, repeatRows=1)
-    TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 6),
+    TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 8),
                                ('ALIGN', (0, 0), (-1, -1), "CENTER")]))
     table=[]
     table.append(TABLE)
-    doc = BaseDocTemplate(httpresponse, topMargin=12, bottomMargin=20, pagesize=A4)
+    doc = BaseDocTemplate(httpresponse, topMargin=12, bottomMargin=20, pagesize=landscape(A4))
 
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height,
            id='normal')
