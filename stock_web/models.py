@@ -425,6 +425,7 @@ class Solutions(models.Model):
                 comps_dict["comp{}".format(i)]=comp
                 if comp.is_op==False:
                     values={"date_op":comp.date_rec,
+                            "project":Projects.objects.get(name="INTERNAL")
                           }
                     comp.open(values, comp.pk, user)
 
