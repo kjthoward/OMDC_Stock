@@ -3,11 +3,26 @@
 {% block content %}
 
 <div class="container-fluid">
-{% for head, url in header %}
-{% if url %}<a href="{{ url }}">{% endif %}
-<h4>{{ head }}</h4>
-{% if url %}</a>{% endif %}
+<table>
+  {% for head, value, url in header %}
+    <tr>
+
+      <td><h4>
+        {{ head }}
+      </h4></td>
+      <td><h4>
+        {% if url %}
+          <a href="{{ url }}">
+        {% endif %}
+        {{ value }}
+        {% if url %}
+          </a>
+          {% endif %}
+       </h4></td>
+
+    </tr>
 {% endfor %}
+</table>
 {% if label %}
 <form action="{{ url }}" method="post">
   {% csrf_token %}

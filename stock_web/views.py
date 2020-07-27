@@ -695,33 +695,45 @@ def projreport(httprequest, pk, extension, fin):
 
 
 def _item_context(httprequest, item, undo):
-    title = ["Reagent - {}".format(item.reagent.name),
-             "Supplier - {}".format(item.supplier.name),
-             "Lot Number - {}".format(item.lot_no) if item.lot_no else "",
-             "Stock Number - {}".format(item.internal.batch_number)]
+    title = ["Reagent -",
+             "Supplier -",
+             "Lot Number -",
+             "Stock Number -"]
+    title_values=[item.reagent.name,
+                  item.supplier.name,
+                  item.lot_no if item.lot_no else "",
+                  item.internal.batch_number]
     title_url=["","","",""]
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
+        title_values.append("")
         title_url.append("")
     if item.project_id is not None:
-        title.append("Project - {}".format(item.project.name))
+        title.append("Project -")
+        title_values.append(item.project.name)
         title_url.append("")
     if item.project_used_id is not None:
-        title.append("Used By Project - {}".format(item.project_used.name))
+        title.append("Used By Project -")
+        title_values.append(item.project_used.name)
         title_url.append("")
     if item.storage is not None:
-        title.append("Location - {}".format(item.storage.name))
+        title.append("Location -")
+        title_values.append(item.storage.name)  
         title_url.append("")
     if item.po is not None:
-        title.append("Purchase Order Number - {}".format(item.po))
+        title.append("Purchase Order Number -")
+        title_values.append(item.po)
         title_url.append("")
     if item.sol is not None and undo!="undo":
-        title.append("Witnessed By - {}".format(item.witness))
+        title.append("Witnessed By -")
+        title_values.append(item.witness)
         title_url.append("")
         for comp in item.sol.list_comp():
-            title.append(comp)
+            title.append("")
+            title_values.append(comp)
             title_url.append(reverse("stock_web:item",args=[comp.id]))
-    title=zip(title,title_url)
+
+    title=zip(title, title_values ,title_url)
     if item.sol is not None:
         headings = ["Date Created", "Created By", "Condition Received", "Expiry Date"]
     else:
@@ -790,32 +802,45 @@ def _item_context(httprequest, item, undo):
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def _vol_context(httprequest, item, undo):
     stripe=False
-    title = ["Reagent - {}".format(item.reagent.name),
-             "Supplier - {}".format(item.supplier.name),
-             "Purchase Order Number - {}".format(item.po),
-             "Lot Number - {}".format(item.lot_no) if item.lot_no else "",
-             "Stock Number - {}".format(item.internal.batch_number),
-             "Volume Received - {}µl".format(item.vol_rec) if item.sol is None else "Volume Made Up - {}µl".format(item.vol_rec),
-             "Current Volume - {}µl".format(item.current_vol if item.current_vol is not None else 0)]
+    title = ["Reagent -",
+             "Supplier -",
+             "Purchase Order Number -",
+             "Lot Number -",
+             "Stock Number -",
+             "Volume Received -" if item.sol is None else "Volume Made Up -",
+             "Current Volume - "]
+    title_values=[item.reagent.name,
+                  item.supplier.name,
+                  item.po,
+                  item.lot_no if item.lot_no else "",
+                  item.internal.batch_number,
+                  item.vol_rec,
+                  item.current_vol if item.current_vol is not None else 0]
     title_url=["","","","","","","",""]
     skip=False
     if undo=="undo":
         title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
+        title_values.append("")
         title_url.append("")
     if item.project_id is not None:
-        title.append("Project - {}".format(item.project.name))
+        title.append("Project -")
+        title_values.append(item.project.name)
         title_url.append("")
     if item.project_used_id is not None:
-        title.append("Used By Project - {}".format(item.project_used.name))
+        title.append("Used By Project -")
+        title_values.append(item.project_used.name)
         title_url.append("")
     if item.storage is not None:
-        title.append("Location - {}".format(item.storage.name))
+        title.append("Location -")
+        title_values.append(item.storage.name)
         title_url.append("")
     if item.sol is not None:
-        title.append("Witnessed By - {}".format(item.witness))
+        title.append("Witnessed By -")
+        title_values.append(item.witn)
         title_url.append("")
         for comp in item.sol.list_comp():
             title.append(comp)
+            title_values.append("")
             title_url.append(reverse("stock_web:item",args=[comp.id]))
     title=zip(title,title_url)
     if item.sol is not None:
