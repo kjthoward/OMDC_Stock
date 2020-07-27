@@ -9,7 +9,7 @@ def report_gen(body, title, httpresponse, user):
     styleNormal = styles['Normal']
     styleHeading = styles['Heading1']
     styleHeading.alignment = 1
-    total_pages=0
+    total_pages=1
     def head_footer(canvas, doc):
         canvas.saveState()
         P = Paragraph("Report Generated: {}    By: {} - Stock Database V{}".format(datetime.datetime.today().strftime("%d/%m/%Y"), user, __version__),
