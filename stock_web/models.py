@@ -242,7 +242,7 @@ class Inventory(models.Model):
     sol=models.ForeignKey("Solutions", on_delete=models.PROTECT, blank=True, null=True)
     po=models.CharField(max_length=20, verbose_name=u"Purchase Order")
     storage = models.ForeignKey(Storage, on_delete=models.PROTECT, blank=True, null=True, verbose_name=u"Storage Location")
-    date_rec=models.DateField(default=datetime.date.today, verbose_name=u"Date Received")
+    date_rec=models.DateField(verbose_name=u"Date Received")
     cond_rec=models.CharField(max_length=2, choices=CONDITION_CHOICES, default=GOOD, verbose_name=u"Condition Received")
     rec_user=models.ForeignKey(User, limit_choices_to={"is_active":True}, on_delete=models.PROTECT, related_name="1+")
     date_exp=models.DateField(verbose_name=u"Expiry Date")
@@ -277,7 +277,7 @@ class Inventory(models.Model):
             amount=1
         with transaction.atomic():
             try:
-                values["val_id"]=Inventory.objects.filter(reagent=values["reagent"].id, lot_no=values["lot_no"],val_id__gte=0).first().val_id
+                values["val_id"]=Inventory.objects.filter(reagent=values["reagent"].id, lot_no=values["lot_no"], date_rec=values["date_rec"],val_id__gte=0).first().val_id
             except: pass
             if "~" in values["reagent"].name:
                 try:
@@ -336,16 +336,16 @@ class Inventory(models.Model):
             VolUsage.use(item, start_vol,invitem.current_vol, vol,
                         user, sol, date)
     @classmethod
-    def validate(cls, values, item, lot, user):
+    def validate(cls, values, item, lot, date_received, user):
         with transaction.atomic():
             val=Validation.new(values["val_date"], values["val_run"].upper(), user)
             if item.sol is None:
-                Inventory.objects.filter(reagent=item.reagent, lot_no=lot).update(val_id=val)
+                Inventory.objects.filter(reagent=item.reagent, lot_no=lot, date_rec=date_received).update(val_id=val)
             else:
                 Inventory.objects.filter(id=item.id).update(val_id=val)
                 for comp in item.sol.list_comp():
                     if comp.val is None:
-                        Inventory.objects.filter(reagent=comp.reagent, lot_no=comp.lot_no).update(val_id=val)
+                        Inventory.objects.filter(reagent=comp.reagent, lot_no=comp.lot_no, date_rec=date_received).update(val_id=val)
     @classmethod
     def finish(cls, values, item, user):
         with transaction.atomic():

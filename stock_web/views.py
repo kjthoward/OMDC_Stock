@@ -1025,7 +1025,7 @@ def openitem(httprequest, pk):
 def valitem(httprequest,pk):
     item=Inventory.objects.get(pk=int(pk))
     form=ValItemForm
-    if Inventory.objects.get(pk=int(pk)).is_op==False:
+    if item.is_op==False:
         return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     header=["Validating item {}".format(item)]
     header+=["Date Open: {}".format(item.date_op.strftime("%d/%m/%y"))]
@@ -1035,7 +1035,7 @@ def valitem(httprequest,pk):
             return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
         else:
             if form.is_valid():
-                Inventory.validate(form.cleaned_data, Inventory.objects.get(pk=int(pk)), Inventory.objects.get(pk=int(pk)).lot_no, httprequest.user)
+                Inventory.validate(form.cleaned_data, item, item.lot_no, item.date_rec, httprequest.user)
                 return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
     else:
         if Inventory.objects.get(pk=int(pk)).val is not None:
@@ -1223,7 +1223,8 @@ def newinv(httprequest, pk):
                                                                                                                                        form.cleaned_data["reagent"].min_count,
                                                                                                                                        make)]
                     if item.recipe is None:
-                        items=Inventory.objects.filter(reagent=form.cleaned_data["reagent"].id, lot_no=form.cleaned_data["lot_no"],val_id__gte=0)
+                        items=Inventory.objects.filter(reagent=form.cleaned_data["reagent"].id, lot_no=form.cleaned_data["lot_no"], date_rec=form.cleaned_data["date_rec"], val_id__gte=0)
+                        # import pdb; pdb.set_trace()
                         if len(items)>0:
                              message+=["THIS ITEM IS VALIDATED. RUN {}".format(items[0].val.val_run)]
                         else:
@@ -1242,7 +1243,8 @@ def newinv(httprequest, pk):
                     return HttpResponseRedirect(reverse("stock_web:newinv",args=["_"]))
         else:
             form = form(initial = {"supplier":item.supplier_def,
-                                   "reagent":item})
+                                   "reagent":item,
+                                   "date_rec":datetime.date.today})
     submiturl = reverse("stock_web:newinv",args=[pk])
     cancelurl = reverse("stock_web:listinv")
     if httprequest.user.is_staff:
