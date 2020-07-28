@@ -1,5 +1,6 @@
 import datetime
 from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.platypus import  BaseDocTemplate, Paragraph, Table, TableStyle, Frame, PageTemplate
 from .version import __version__
@@ -23,8 +24,8 @@ def report_gen(body, title, httpresponse, user):
 
         P = Paragraph("{}".format(title),styleHeading)
         w, h = P.wrap(doc.width, doc.topMargin)
-        #P.drawOn(canvas, ((doc.width-stringWidth(title, "Times-Roman", 20))/2.0), doc.height + doc.topMargin)
-        canvas.drawCentredString((doc.width+canvas.stringWidth(title))/2.0, doc.height+doc.topMargin, title)
+        #P.drawOn(canvas, 420.9, doc.height + doc.topMargin)
+        canvas.drawCentredString((doc.width+doc.leftMargin+doc.rightMargin)/2.0, doc.height+doc.topMargin, title)
         #pdb.set_trace()
         canvas.restoreState()
     TABLE=Table(data=body, repeatRows=1)
