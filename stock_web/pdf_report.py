@@ -11,6 +11,7 @@ def report_gen(body, title, httpresponse, user):
     styleHeading = styles['Heading1']
     styleHeading.alignment = 1
     total_pages=1
+
     def head_footer(canvas, doc):
         canvas.saveState()
         P = Paragraph("Report Generated: {}    By: {} - Stock Database V{}".format(datetime.datetime.today().strftime("%d/%m/%Y"), user, __version__),
@@ -28,23 +29,23 @@ def report_gen(body, title, httpresponse, user):
         #canvas.drawCentredString((doc.width+doc.leftMargin+doc.rightMargin)/2.0, doc.height+doc.topMargin, title)
         #pdb.set_trace()
         canvas.restoreState()
-    TABLE=Table(data=body, repeatRows=1)
-    TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 8),
+    fake_TABLE=Table(data=body, repeatRows=1)
+    fake_TABLE.setStyle(TableStyle([('FONTSIZE', (0, 0), (-1, -1), 8),
                                ('ALIGN', (0, 0), (-1, -1), "CENTER")]))
-    table=[]
-    table.append(TABLE)
-    doc = BaseDocTemplate(httpresponse, topMargin=12, bottomMargin=20, pagesize=landscape(A4))
+    fake_table=[]
+    fake_table.append(fake_TABLE)
+    fake_doc = BaseDocTemplate(httpresponse, topMargin=12, bottomMargin=20, pagesize=landscape(A4))
 
-    frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height,
+    fake_frame = Frame(fake_doc.leftMargin, fake_doc.bottomMargin, fake_doc.width, fake_doc.height,
            id='normal')
-    template = PageTemplate(id='table', frames=frame, onPage=head_footer)
-    doc.addPageTemplates([template])
+    fake_template = PageTemplate(id='fake_table', frames=fake_frame)
+    fake_doc.addPageTemplates([fake_template])
 
-    doc.build(table)
+    fake_doc.build(fake_table)
     ######COMPELTE HACK TO PAGE NUMBERS######
     #Builds the entire document (above), then counts the number of pages
     #Then rebuilds the entire document but with the new value for total pages to include in footer
-    total_pages=doc.page
+    total_pages=fake_doc.page
 
     styles = getSampleStyleSheet()
     styleNormal = styles['Normal']
@@ -64,3 +65,4 @@ def report_gen(body, title, httpresponse, user):
     doc.addPageTemplates([template])
 
     doc.build(table)
+    return doc
