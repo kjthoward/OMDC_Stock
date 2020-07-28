@@ -439,12 +439,16 @@ def toorder(httprequest):
         writer = csv.writer(response)
         writer.writerow(["Item", "Project Last Used By", "Default Supplier", "Default Supplier Catalogue Number", "Amount to Order"])
         for item in low_reagents:
-            last_open=Inventory.objects.filter(reagent=item).order_by("date_op").reverse()[0]
-            try:
-                project_last_used=last_open.project_used.name
-            except:
-                project_last_used=None
-            if project_last_used==None:
+            open_list=Inventory.objects.filter(reagent=item).order_by("date_op").reverse()
+            if len(open_list)!=0:
+                last_open=open_list[0]
+                try:
+                    project_last_used=last_open.project_used.name
+                except:
+                    project_last_used=None
+                if project_last_used==None:
+                    project_last_used="N/A"
+            else:
                 project_last_used="N/A"
             writer.writerow([item.name, project_last_used, item.supplier_def.name, item.cat_no, int(item.min_count)-int(item.count_no)])
         return response
@@ -718,7 +722,7 @@ def _item_context(httprequest, item, undo):
         title_url.append("")
     if item.storage is not None:
         title.append("Location -")
-        title_values.append(item.storage.name)  
+        title_values.append(item.storage.name)
         title_url.append("")
     if item.po is not None:
         title.append("Purchase Order Number -")
