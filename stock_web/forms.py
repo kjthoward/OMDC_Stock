@@ -350,7 +350,7 @@ class ChangeMinForm(forms.Form):
             self.add_error("number", forms.ValidationError("This is the same as the Current Minimum Stock Level"))
 
 class StockReportForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Reagents.objects.filter(count_no__gte=1).order_by("name"), label="Reagent", widget=Select2Widget)
+    name=forms.ModelChoiceField(queryset = Reagents.objects.filter(count_no__gte=1).exclude(is_active=False, count_no__lt=1).order_by("name"), label="Reagent", widget=Select2Widget)
 
 class ProjReportForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), label="Project", widget=Select2Widget)

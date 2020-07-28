@@ -263,7 +263,7 @@ def loginview(httprequest):
 def listinv(httprequest):
     title = "List of Reagents"
     headings = ["Reagent Name", "Number In Stock", "Minimum Stock Level"]
-    items=Reagents.objects.all().order_by("name")
+    items=Reagents.objects.all().exclude(is_active=False, count_no=0).order_by("name")
     body=[]
     for item in items:
         values = [item.name,
@@ -429,7 +429,7 @@ def inventory(httprequest, search, what, sortby, page):
 @user_passes_test(is_logged_in, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def toorder(httprequest):
-    low_reagents=Reagents.objects.filter(count_no__lt=F("min_count")).exclude(name="INTERNAL")
+    low_reagents=Reagents.objects.filter(count_no__lt=F("min_count")).exclude(name="INTERNAL").exclude(is_active=False)
     if len(low_reagents)==0:
         messages.success(httprequest, "No items are in need of ordering")
         return HttpResponseRedirect(httprequest.META.get('HTTP_REFERER', '/'))
