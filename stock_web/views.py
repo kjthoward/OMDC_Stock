@@ -975,7 +975,7 @@ def useitem(httprequest,pk):
                         make="made"
                     else:
                         make="ordered"
-                    message+=["Current stock level for {} is {}µl. Minimun quantity is {}µl. Check if more needs to be {}".format(item.reagent.name,item.reagent.count_no,
+                    message+=["Current stock level for {} is {}µl. Minimum quantity is {}µl. Check if more needs to be {}".format(item.reagent.name,item.reagent.count_no,
                                                                                                                           item.reagent.min_count, make)]
 
 
@@ -1024,7 +1024,7 @@ def openitem(httprequest, pk):
                             make="made"
                         else:
                             make="ordered"
-                        messages.success(httprequest, "Current stock level for {} is {}. Minimun quantity is {}. Check if more needs to be {}".format(item.reagent.name,
+                        messages.success(httprequest, "Current stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(item.reagent.name,
                                                                                                                                               item.reagent.count_no,
                                                                                                                                               item.reagent.min_count,
                                                                                                                                               make))
@@ -1098,7 +1098,7 @@ def finishitem(httprequest, pk):
                             make="made"
                         else:
                             make="ordered"
-                        messages.success(httprequest, "Current stock level for {0} is {1}{2}. Minimun quantity is {3}{2}. Check if more needs to be {4}".format(item.reagent.name,
+                        messages.success(httprequest, "Current stock level for {0} is {1}{2}. Minimum quantity is {3}{2}. Check if more needs to be {4}".format(item.reagent.name,
                                                                                                                                               item.reagent.count_no,
                                                                                                                                               "µl" if item.reagent.track_vol else "",
                                                                                                                                               item.reagent.min_count,
@@ -1249,7 +1249,7 @@ def newinv(httprequest, pk):
                             make="made"
                         else:
                             make="ordered"
-                        message+=["Current stock level for {} is {}. Minimun quantity is {}. Check if more needs to be {}".format(form.cleaned_data["reagent"].name,
+                        message+=["Current stock level for {} is {}. Minimum quantity is {}. Check if more needs to be {}".format(form.cleaned_data["reagent"].name,
                                                                                                                                        quant,
                                                                                                                                        form.cleaned_data["reagent"].min_count,
                                                                                                                                        make)]
