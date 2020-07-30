@@ -806,6 +806,7 @@ def _item_context(httprequest, item, undo):
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def _vol_context(httprequest, item, undo):
     stripe=False
+
     title = ["Reagent -",
              "Supplier -",
              "Purchase Order Number -",
@@ -846,7 +847,8 @@ def _vol_context(httprequest, item, undo):
             title.append(comp)
             title_values.append("")
             title_url.append(reverse("stock_web:item",args=[comp.id]))
-    title=zip(title,title_url)
+
+    title=zip(title,title_values,title_url)
     if item.sol is not None:
         headings = ["Date Created", "Created By", "Condition Received", "Expiry Date"]
     else:
