@@ -1,4 +1,22 @@
 <div class="container-fluid">
+
+<!-- small JS function to go back to todays date -->
+  <script>
+    function change(element){
+      document.getElementById(element.id).value=new Date().toISOString().substr(0,10);
+    }
+    
+    function plus_year(element,years){
+      d = (document.getElementById("id_date_rec").value).split("-");
+      year = Number(d[0])+years;
+      month = d[1];
+      day = d[2];
+      new_date=year + "-" + month + "-" + day;
+      console.log(new_date);
+      document.getElementById(element.id).value=new_date;
+    }
+
+ </script>
 {% for head in header %}
 <h4>{{ head }}</h4>
 {% endfor %}
@@ -30,10 +48,21 @@
             <th>
               <label for="id_{{ field.name }}">{{ field.label }}{% if field.field.required %}<span class="required" style="color:red">*</span>{% endif %}:</label>
             </th>
-            <td>
-              {{ field }}
+
+              <!-- If field is a date field (calendar selection) add something to go back to today's date -->
+              <!-- {{ field }} {% if "date" in field.html_name %}<a onclick="change({{field.id_for_label}})">Reset to Today</a>{% endif %} -->
+              <!-- Button version of above -->
+              <td>{{ field }}</td>
+              {% if "date_rec" in field.html_name %}
+                <td><input type="button" onclick="change({{field.id_for_label}})" value="Reset to Today"></td>
+              {% endif %}
+              {% if "date_exp" in field.html_name %}
+                <td><input type="button" onclick="plus_year({{field.id_for_label}},1)" value="Date Received + 1 Year"</td>
+                <td><input type="button" onclick="plus_year({{field.id_for_label}},2)" value="Date Received + 2 Years"</td>
+              {% endif %}
+
               {% if field.errors %}{{ field.errors }}{% endif %}
-            </td>
+
           </tr>
           <br>
           {% endfor %}
