@@ -259,6 +259,7 @@ class SearchForm(forms.Form):
     storage=forms.ModelChoiceField(queryset = Storage.objects.order_by("name"), widget=Select2Widget, required=False)
     lot_no=forms.CharField(label="Lot Number", max_length=20, required=False)
     int_id=forms.CharField(label="Stock Number", max_length=4, required=False)
+    po=forms.CharField(label="Purchase Order", max_length=20, required=False)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
 
 class ChangeDefForm1(forms.Form):
