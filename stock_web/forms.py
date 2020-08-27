@@ -121,7 +121,9 @@ class OpenItemForm(forms.ModelForm):
             self.add_error("date_op", forms.ValidationError("Date open occurs before received date"))
         elif self.cleaned_data["date_op"]>datetime.date.today():
             self.add_error("date_op", forms.ValidationError("Date open occurs in the future"))
-
+    def __init__(self, *args, **kwargs):
+        super(OpenItemForm, self).__init__(*args, **kwargs)
+        self.fields["project"].queryset=Projects.objects.exclude(is_active=False)
 class ValItemForm(forms.ModelForm):
     val_date = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}), label="Validation Date")
     val_run = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}), label="Validation Run")
@@ -313,7 +315,7 @@ class EditSupForm(forms.Form):
                 self.add_error("name", forms.ValidationError(reagent))
 
 class EditProjForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Projects.objects.all().order_by("name"), widget=Select2Widget, label=u"Project")
+    name=forms.ModelChoiceField(queryset = Projects.objects.all().exclude(name="INTERNAL").order_by("name"), widget=Select2Widget, label=u"Project")
 
 class EditStoreForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Storage.objects.all().order_by("name"), widget=Select2Widget, label=u"Storage Location")
