@@ -682,7 +682,7 @@ def projreport(httprequest, pk, extension, fin):
                       item.date_exp.strftime("%d/%m/%y"),
                       item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                       item.op_user.username if item.op_user is not None else "",
-                      item.project_used if item.project_used_id is not None else "",
+                      item.project_used.name if item.project_used_id is not None else "",
                       item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
                       item.val.val_run if item.val is not None else "",
                       item.finished,
