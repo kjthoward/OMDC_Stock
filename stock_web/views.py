@@ -571,16 +571,31 @@ def invreport(httprequest,what, extension):
                           item.date_rec.strftime("%d/%m/%y"),
                           item.date_exp.strftime("%d/%m/%y"),
                           ]]
+        elif what=="unval":
+            body=[["Reagent", "Supplier", "Lot Number", "Project", "Used by Project", "Stock Number", "Received",
+                   "Expiry", "Opened", "Opened By"]]
+            for item in items:
+                body+= [[item.reagent.name,
+                          item.supplier.name,
+                          item.lot_no,
+                          item.project.name if item.project is not None else "",
+                          item.project_used.name if item.project_used_id is not None else "",
+                          item.internal.batch_number,
+                          item.date_rec.strftime("%d/%m/%y"),
+                          item.date_exp.strftime("%d/%m/%y"),
+                          item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
+                          item.op_user.username if item.op_user is not None else "",
+                          ]]
 
         else:
-            body=[["Reagent", "Supplier", "Project", "Used by Project", "Lot Number", "Stock Number", "Received",
+            body=[["Reagent", "Supplier", "Lot Number", "Project", "Used by Project", "Stock Number", "Received",
                    "Expiry", "Opened", "Opened By", "Date Validated", "Validation Run"]]
             for item in items:
                 body+= [[item.reagent.name,
                           item.supplier.name,
+                          item.lot_no,
                           item.project.name if item.project is not None else "",
                           item.project_used.name if item.project_used_id is not None else "",
-                          item.lot_no,
                           item.internal.batch_number,
                           item.date_rec.strftime("%d/%m/%y"),
                           item.date_exp.strftime("%d/%m/%y"),
