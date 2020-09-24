@@ -248,7 +248,7 @@ def loginview(httprequest):
                         messages.success(httprequest,"You are required to change your password after resetting it")
                         return HttpResponseRedirect(reverse("stock_web:change_password"))
                     else:
-                        return HttpResponseRedirect(reverse("stock_web:listinv"))
+                        return HttpResponseRedirect(httprequest.GET["next"] if "next" in httprequest.GET.keys() else reverse("stock_web:listinv"))
 
                 else:
                     try:
