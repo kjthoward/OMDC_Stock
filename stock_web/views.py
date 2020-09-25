@@ -861,7 +861,7 @@ def _vol_context(httprequest, item, undo):
         title_url.append("")
     if item.sol is not None:
         title.append("Witnessed By -")
-        title_values.append(item.witn)
+        title_values.append(item.witness)
         title_url.append("")
         for comp in item.sol.list_comp():
             title.append(comp)
