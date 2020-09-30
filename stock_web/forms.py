@@ -140,9 +140,12 @@ class FinishItemForm(forms.ModelForm):
                    "fin_text":forms.Textarea(attrs={"style": "height:5em;"})}
     def clean(self):
         super(FinishItemForm, self).clean()
+        fin_date=self.cleaned_data["date_fin"]
+        if fin_date<self.cleaned_data["date_rec"]:
+            self.add_error("date_fin", forms.ValidationError("Date occurs before the item was received"))
         if self.cleaned_data["is_op"]==True:
-            if self.cleaned_data["date_fin"]<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
-                self.add_error("date_fin", forms.ValidationError("Date finished occurs before item was opened"))
+            if fin_date<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
+                self.add_error("date_fin", forms.ValidationError("Date occurs before item was opened"))
 
 
 class NewSupForm(forms.ModelForm):
