@@ -809,7 +809,10 @@ def _item_context(httprequest, item, undo):
         values+=["Discard Item"]
         urls+=[reverse("stock_web:finishitem",args=[item.id])]
     if item.finished==True:
-        headings+=["Date Finished", "Finished by"]
+        if item.is_op==True:
+            headings+=["Date Finished", "Finished by"]
+        else:
+            headings+=["Date Discarded", "Discared by"]
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
         if undo=="undo":
@@ -924,7 +927,10 @@ def _vol_context(httprequest, item, undo):
         values+=["Discard Item"]
         urls+=[reverse("stock_web:finishitem",args=[item.id])]
     if item.finished==True:
-        headings+=["Date Finished", "Finished by"]
+        if item.is_op==True:
+            headings+=["Date Finished", "Finished by"]
+        else:
+            headings+=["Date Discarded", "Discared by"]
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
     body = [(zip(values,urls, urls),stripe)]
@@ -1246,7 +1252,7 @@ def newinv(httprequest, pk):
         item=Reagents.objects.get(pk=int(pk))
         if item.recipe is not None:
             return HttpResponseRedirect(reverse("stock_web:createnewsol", args=[item.recipe_id]))
-        title=["Enter Delivery Details - {} {}".format(item, "- " + item.cat_no if item.cat_no is not None else 
+        title=["Enter Delivery Details - {} {}".format(item, "- " + item.cat_no if item.cat_no is not None else"")]
         template="stock_web/newinvform.html"
         if item.track_vol==False:
             form=NewInvForm
