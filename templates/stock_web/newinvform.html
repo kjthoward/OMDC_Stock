@@ -1,0 +1,88 @@
+{% extends "stock_web/stock.html" %}
+
+{% block content %}
+<script>
+  // Function to show "Acceptance Reason" box if expiry date is within 6 months of date received
+  // will also hide it if dates changed to has >6 months
+function set_min_exp() {
+  var date_rec_box = document.getElementById("id_date_rec");
+  var date_exp_box = document.getElementById("id_date_exp");
+  date_exp_box.min=date_rec_box.value;
+}
+<!-- small JS function to go back to todays date -->
+function change(element){
+  document.getElementById(element.id).value=new Date().toISOString().substr(0,10);
+}
+
+function plus_year(element,years){
+  d = (document.getElementById("id_date_rec").value).split("-");
+  year = Number(d[0])+years;
+  month = d[1];
+  day = d[2];
+  new_date=year + "-" + month + "-" + day;
+  console.log(new_date);
+  document.getElementById(element.id).value=new_date;
+}
+
+</script>
+<body>
+<div class="container-fluid">
+{% for head in header %}
+<h4>{{ head }}</h4>
+{% endfor %}
+    {% for line in newinformation %}
+    {{ line  }}<br>
+    {% endfor %}
+    <div class="row">
+      <div class="col-sm-4">
+
+            {% for warning, severe in newwarnings %}
+            {% if severe %}<div class="alert alert-danger"><span class="glyphicon glyphicon-ban-circle"></span><strong> WARNING! </strong>
+            {% else %}<div class="alert alert-warning"><span class="glyphicon glyphicon-exclamation-sign"></span><strong> Warning! </strong>{% endif %}
+            {{ warning }}</div>
+            {% endfor %}
+      </div>
+      <div class="col-sm-8">
+      </div>
+    </div>
+
+    <form action="{{ submiturl }}" method="post">
+      {% csrf_token %}
+      <fieldset><legend>{{ heading }}</legend>
+          <table onchange="set_min_exp()">
+            {% for hidden_field in form.hidden_fields %}
+            {{ hidden_field.errors }}
+            {{ hidden_field }}
+            {% endfor %}
+              {% for field in form.visible_fields %}
+              <tr{% if field.errors %} class="errors" {% endif%}>
+              <th>
+                <label for="id_{{ field.name }}">{{ field.label }}{% if field.field.required %}<span class="required" style="color:red">*</span>{% endif %}:</label>
+              </th>
+
+                <!-- If field is a date field (calendar selection) add something to go back to today's date -->
+                <!-- {{ field }} {% if "date" in field.html_name %}<a onclick="change({{field.id_for_label}})">Reset to Today</a>{% endif %} -->
+                <!-- Button version of above -->
+                <td>{{ field }}
+                {% if "date_rec" in field.html_name %}
+                  <input type="button" onclick="change({{field.id_for_label}})" value="Reset to Today">
+                {% endif %}
+                {% if "date_exp" in field.html_name %}
+                  <input type="button" onclick="plus_year({{field.id_for_label}},1)" value="Date Received + 1 Year">
+                  <input type="button" onclick="plus_year({{field.id_for_label}},2)" value="Date Received + 2 Years">
+                {% endif %}
+                </td>
+                {% if field.errors %}{{ field.errors }}{% endif %}
+
+            </tr>
+            {% endfor %}
+          </table>
+          <input type="submit" class="btn btn-success" name="submit" value="save" />
+          {% for button, style, url in extrabuttons %}<a class="btn btn-{{ style }}" href="{{ url }}">{{ button  }}<a/>{% endfor %}
+          <a class="btn btn-danger" href="{{ cancelurl }}">cancel</a>
+        </fieldset>
+      </form>
+  </div>
+</body>
+
+{% endblock content %}

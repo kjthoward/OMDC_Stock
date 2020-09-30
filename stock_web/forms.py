@@ -44,7 +44,7 @@ class NewInvForm(forms.ModelForm):
                    "project":Select2Widget,
                    "storage":Select2Widget,
                    "lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
-                   "date_rec":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":datetime.datetime.today().strftime("%Y-%m-%d")}),
+                   "date_rec":DateInput(),
                    "date_exp":DateInput(),
                    "reagent":forms.HiddenInput(),
                    "vol_rec":forms.HiddenInput(),
@@ -54,8 +54,6 @@ class NewInvForm(forms.ModelForm):
         super(NewInvForm, self).clean()
         if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
             self.add_error("date_exp", forms.ValidationError("Expiry date occurs before received date"))
-        elif self.cleaned_data["date_rec"]>datetime.date.today():
-            self.add_error("date_rec", forms.ValidationError("Date received occurs in the future"))
     def __init__(self, *args, **kwargs):
         super(NewInvForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
@@ -67,7 +65,7 @@ class NewProbeForm(forms.ModelForm):
         model = Inventory
         fields = ("reagent", "supplier", "lot_no", "cond_rec", "date_rec", "po", "date_exp", "project", "storage", "vol_rec")
         widgets = {"lot_no":forms.Textarea(attrs={"style": "height:2em;"}),
-                   "date_rec":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":datetime.datetime.today().strftime("%Y-%m-%d")}),
+                   "date_rec":DateInput(),
                    "date_exp":DateInput(),
                    "reagent":forms.HiddenInput(),
                    "current_vol":forms.HiddenInput(),
@@ -78,8 +76,6 @@ class NewProbeForm(forms.ModelForm):
         super(NewProbeForm, self).clean()
         if self.cleaned_data["date_exp"]<self.cleaned_data["date_rec"]:
             self.add_error("date_exp", forms.ValidationError("Expiry date occurs before received date"))
-        elif self.cleaned_data["date_rec"]>datetime.date.today():
-            self.add_error("date_rec", forms.ValidationError("Date received occurs in the future"))
     def __init__(self, *args, **kwargs):
         super(NewProbeForm, self).__init__(*args, **kwargs)
         self.fields["supplier"].queryset=Suppliers.objects.exclude(name="Internal").exclude(is_active=False)
@@ -88,7 +84,7 @@ class NewProbeForm(forms.ModelForm):
 
 class UseItemForm(forms.ModelForm):
     vol_used = forms.IntegerField(min_value=1, label=u"Volume Used (µl)")
-    date_used = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}))
+    date_used = forms.DateField(widget=DateInput, label="Date Used")
     class Meta:
         model = Inventory
         fields = ("current_vol","date_op", "last_usage")
@@ -104,8 +100,7 @@ class UseItemForm(forms.ModelForm):
         if self.cleaned_data["last_usage"] is not None:
             if self.cleaned_data["date_used"]<self.cleaned_data["last_usage"].date:
                 self.add_error("date_used", forms.ValidationError("This Usage Date is before the most recent use"))
-        if self.cleaned_data["date_used"]>datetime.date.today():
-            self.add_error("date_used", forms.ValidationError("Date of use occurs in the future"))
+
 
 class OpenItemForm(forms.ModelForm):
     project=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), widget=Select2Widget, required=False)
@@ -113,19 +108,18 @@ class OpenItemForm(forms.ModelForm):
         model = Inventory
         fields = ("date_rec","date_op")
         widgets = {"date_rec":forms.HiddenInput,
-                   "date_op":DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")})}
+                   "date_op":DateInput()}
         labels = {"date_op":"Date Open"}
     def clean(self):
         super(OpenItemForm, self).clean()
         if self.cleaned_data["date_op"]<datetime.datetime.strptime(self.data["date_rec"],"%Y-%m-%d").date():
             self.add_error("date_op", forms.ValidationError("Date open occurs before received date"))
-        elif self.cleaned_data["date_op"]>datetime.date.today():
-            self.add_error("date_op", forms.ValidationError("Date open occurs in the future"))
+
     def __init__(self, *args, **kwargs):
         super(OpenItemForm, self).__init__(*args, **kwargs)
         self.fields["project"].queryset=Projects.objects.exclude(is_active=False)
 class ValItemForm(forms.ModelForm):
-    val_date = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}), label="Validation Date")
+    val_date = forms.DateField(widget=DateInput, label="Validation Date")
     val_run = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}), label="Validation Run")
     class Meta:
         model = Inventory
@@ -135,11 +129,9 @@ class ValItemForm(forms.ModelForm):
         super(ValItemForm, self).clean()
         if self.cleaned_data["val_date"]<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
             self.add_error("val_date", forms.ValidationError("Date validated occurs before date opened"))
-        elif self.cleaned_data["val_date"]>datetime.date.today():
-            self.add_error("val_date", forms.ValidationError("Date of validation run occurs in the future"))
 
 class FinishItemForm(forms.ModelForm):
-    date_fin = forms.DateField(widget=DateInput(attrs={"min":(datetime.datetime.today()-relativedelta(years=1)).strftime("%Y-%m-%d"), "max":(datetime.datetime.today()+relativedelta(years=5)).strftime("%Y-%m-%d")}), label="Date Finished")
+    date_fin = forms.DateField(widget=DateInput,label="Date Finished")
     class Meta:
         model = Inventory
         fields = ("date_op","fin_text","is_op")
@@ -151,8 +143,7 @@ class FinishItemForm(forms.ModelForm):
         if self.cleaned_data["is_op"]==True:
             if self.cleaned_data["date_fin"]<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
                 self.add_error("date_fin", forms.ValidationError("Date finished occurs before item was opened"))
-        if self.cleaned_data["date_fin"]>datetime.date.today():
-            self.add_error("date_fin", forms.ValidationError("Date of disposal occurs in the future"))
+
 
 class NewSupForm(forms.ModelForm):
     class Meta:

@@ -1247,7 +1247,7 @@ def newinv(httprequest, pk):
         if item.recipe is not None:
             return HttpResponseRedirect(reverse("stock_web:createnewsol", args=[item.recipe_id]))
         title=["Enter Delivery Details - {}".format(item)]
-        template="stock_web/form.html"
+        template="stock_web/newinvform.html"
         if item.track_vol==False:
             form=NewInvForm
         elif item.track_vol==True:
