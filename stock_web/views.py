@@ -286,7 +286,7 @@ def listinv(httprequest):
 @user_passes_test(is_logged_in, login_url=LOGINURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def inventory(httprequest, search, what, sortby, page):
-    #forces page 1 if non numberical value entered or <1
+    #forces page 1 if non numerical value entered or <1
     try:
         page=int(page)
     except:
@@ -485,7 +485,7 @@ def stockreport(httprequest, pk, extension):
 
     else:
         title="{} - Stock Report".format(Reagents.objects.get(pk=int(pk)))
-        #gets items, with open items first, then sorted by expirey date
+        #gets items, with open items first, then sorted by expiry date
         items = Inventory.objects.select_related("supplier","reagent","internal","val","op_user","project", "project_used").filter(reagent_id=int(pk),finished=False).order_by("-is_op","date_exp")
         body=[["Supplier Name", "Lot Number", "Project Assigned", "Used by Project", "Stock Number", "Date Received",
                "Expiry Date", "Date Open", "Opened By", "Date Validated", "Validation Run"]]
@@ -681,7 +681,7 @@ def projreport(httprequest, pk, extension, fin):
 
     else:
         title="{} - Project Stock Report".format(Projects.objects.get(pk=int(pk)))
-        #gets items, with open items first, then sorted by expirey date
+        #gets items, with open items first, then sorted by expiry date
         items = Inventory.objects.select_related("supplier","reagent", "project_used", "project", "internal","val","op_user").filter(project_id=int(pk))
         if fin=="0":
             items=items.exclude(finished=True)
@@ -812,7 +812,7 @@ def _item_context(httprequest, item, undo):
         if item.is_op==True:
             headings+=["Date Finished", "Finished by"]
         else:
-            headings+=["Date Discarded", "Discared by"]
+            headings+=["Date Discarded", "Discarded by"]
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
         if undo=="undo":
@@ -930,7 +930,7 @@ def _vol_context(httprequest, item, undo):
         if item.is_op==True:
             headings+=["Date Finished", "Finished by"]
         else:
-            headings+=["Date Discarded", "Discared by"]
+            headings+=["Date Discarded", "Discarded by"]
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
     body = [(zip(values,urls, urls),stripe)]
