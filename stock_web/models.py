@@ -17,7 +17,7 @@ from .email import send, EMAIL
 #Check if should be set to True. True would mean that whenever anyone gets an account
 #made they will need to change password on first login. Useful as allows accounts
 #to be made by admin with e.g "password" but could be annoying if user is there
-#when acount gets made and sets their own password...
+#when account gets made and sets their own password...
 class ForceReset(models.Model):
     def __str__(self):
         return "Toggle Reset for {}".format(self.user)
@@ -129,7 +129,7 @@ class Internal(models.Model):
 ##second=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 ##third=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 ##fourth=['0', '1', '2', '3', '4', '5', '6', '7', '8', '9','A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
-#Random for production so doesn't appear sequenctial
+#Random for production so doesn't appear sequential
 first=['J', 'F', 'G', 'U', 'M', 'A', 'Y', 'R', 'E', 'H', 'B', 'K', 'N', 'W', 'C', 'V', 'Z', 'P', 'S', 'X', 'D', 'L', 'T', 'Q']
 second=['1', 'K', '6', 'U', 'W', '8', 'J', '9', 'F', 'C', 'N', 'B', '0', 'L', '2', '4', 'Z', 'X', 'M', 'G', '3', 'R', '7', 'E', '5', 'D', 'S', 'H', 'V', 'P', 'T', 'Y', 'A', 'Q']
 third=['9', 'A', 'B', 'P', 'Q', 'G', 'V', '3', 'C', '5', 'T', 'J', 'D', 'K', '1', 'H', '6', 'W', 'E', 'S', '2', 'M', 'Z', 'X', 'R', 'U', 'Y', '7', '4', 'F', '8', '0', 'N', 'L']
@@ -435,7 +435,7 @@ class Solutions(models.Model):
             start_day=int(datetime.datetime.today().strftime("%d"))
             start_month=int(datetime.datetime.today().strftime("%m"))+rec.shelf_life
             start_year=int(datetime.datetime.today().strftime("%Y"))
-            #Checks that adding shelf life to current month doesn't go over 12 months, incremements year if it does
+            #Checks that adding shelf life to current month doesn't go over 12 months, increments year if it does
             #while not if used as could be longer than 1 year expiry so need to do multiple checks
             while start_month>12:
                 start_year+=1
