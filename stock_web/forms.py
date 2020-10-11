@@ -134,9 +134,10 @@ class FinishItemForm(forms.ModelForm):
     date_fin = forms.DateField(widget=DateInput,label="Date Finished")
     class Meta:
         model = Inventory
-        fields = ("date_op","fin_text","is_op")
+        fields = ("date_op","fin_text","is_op", "date_rec")
         widgets = {"date_op":forms.HiddenInput,
                    "is_op":forms.HiddenInput,
+                   "date_rec":forms.HiddenInput,
                    "fin_text":forms.Textarea(attrs={"style": "height:5em;"})}
     def clean(self):
         super(FinishItemForm, self).clean()

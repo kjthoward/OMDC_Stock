@@ -1161,7 +1161,8 @@ def finishitem(httprequest, pk):
             messages.success(httprequest,"WARNING - ITEM HAS NOT BEEN OPENED")
         if item.val_id is None and item.is_op==True and item.sol is None:
             messages.success(httprequest,"WARNING - THIS ITEM HAS NOT BEEN VALIDATED")
-        form=form(instance=item,initial = {"date_fin":datetime.datetime.now()})
+        form=form(instance=item,initial = {"date_fin":datetime.datetime.now(),
+                                           "date_rec":item.date_rec})
     submiturl = reverse("stock_web:finishitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
