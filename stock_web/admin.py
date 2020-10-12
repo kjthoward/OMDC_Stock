@@ -9,6 +9,7 @@ from django.contrib.auth.forms import UserCreationForm, AdminPasswordChangeForm,
 from django.http import Http404, HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import escape
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext, gettext_lazy as _
 from django.template.response import TemplateResponse
 from django import forms
@@ -54,11 +55,44 @@ UserAdmin.add_fieldsets = (
     }),
 )
 
+def SU(self):
+    return self.is_superuser
+SU.boolean = True
+SU.admin_order_field = 'is_superuser'
+SU.short_description='SuperUser'
+
+#function to list all roles someone has
+def roles(self):
+    value = ', '.join([str(name) for name in self.groups.all()])
+    return mark_safe("<nobr>{}</nobr>".format(value))
+roles.allow_tags = True
+roles.short_description = u'Groups'
+
+# function to show last login
+def last(self):
+    fmt = "%b %d, %H:%M"
+    #fmt = "%Y %b %d, %H:%M:%S"
+    if self.last_login is not None:
+        value = self.last_login.strftime(fmt)
+    else:
+        value = None
+    return mark_safe("<nobr>%s</nobr>" % value)
+last.allow_tags = True
+last.admin_order_field = "last_login"
+last.short_description = "Last Login"
+
+def pw_reset(self):
+    url="./{}/password/".format(self.id)
+    text = "Reset"
+    return mark_safe('<a href="{}">{}</a>'.format(url,text))
+pw_reset.allow_tags = True
+pw_reset.short_description = "Reset PW"
+
 #Replaces default Admin site with custom version (which is altered default)
 admin.site.unregister(User)
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ("username","email","first_name","last_name","is_staff","is_active")
+    list_display = ("username","email","first_name","last_name","is_staff","is_active", SU, roles, last, pw_reset)
     change_password_form = PWResetForm
     add_form_template = 'admin/stock_web/add_form.html'
     def get_form(self, request, obj=None, **kwargs):
