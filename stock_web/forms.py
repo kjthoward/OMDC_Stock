@@ -15,6 +15,10 @@ Select2Widget=Select2Widget(attrs={"style": "width:12.5em"})
 class DateInput(forms.DateInput):
     input_type = 'date'
 
+class ShowActiveModelChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.show_active()
+
 class NewInvForm1(forms.ModelForm):
     reagent=forms.ModelChoiceField(queryset = Reagents.objects.all().exclude(is_active=False).order_by("name"), label="Reagent", widget=Select2Widget)
 
@@ -300,7 +304,7 @@ class RemoveStoreForm(forms.Form):
            self.add_error("storage", forms.ValidationError("If you no longer need this project try using the '(De)Activate Storage Locations' Page"))
 
 class EditSupForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").order_by("name"), widget=Select2Widget, label=u"Supplier")
+    name=ShowActiveModelChoiceField(queryset = Suppliers.objects.all().exclude(name="Internal").order_by("name"), widget=Select2Widget, label=u"Supplier")
 
     def clean(self):
         super(EditSupForm, self).clean()
@@ -310,13 +314,13 @@ class EditSupForm(forms.Form):
                 self.add_error("name", forms.ValidationError(reagent))
 
 class EditProjForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Projects.objects.all().exclude(name="INTERNAL").order_by("name"), widget=Select2Widget, label=u"Project")
+    name=ShowActiveModelChoiceField(queryset = Projects.objects.all().exclude(name="INTERNAL").order_by("name"), widget=Select2Widget, label=u"Project")
 
 class EditStoreForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Storage.objects.all().order_by("name"), widget=Select2Widget, label=u"Storage Location")
+    name=ShowActiveModelChoiceField(queryset = Storage.objects.all().order_by("name"), widget=Select2Widget, label=u"Storage Location")
 
 class EditReagForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")
+    name=ShowActiveModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")
 
 class EditInvForm(forms.Form):
     item=forms.CharField(label="Reagent Internal ID", max_length=4,widget=forms.TextInput(attrs={"autocomplete": "off"}))

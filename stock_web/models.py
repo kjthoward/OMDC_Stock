@@ -64,6 +64,12 @@ class Suppliers(models.Model):
         supplier = cls.objects.create(name=name)
         return supplier
 
+    def show_active(self):
+        if self.is_active==True:
+            return self.name
+        else:
+            return "{} - D/A".format(self.name)
+
 class Projects(models.Model):
     def __str__(self):
         return self.name
@@ -78,18 +84,30 @@ class Projects(models.Model):
         project = cls.objects.create(name=name)
         return project
 
-class Storage(models.Model):
-   def __str__(self):
-       return self.name
-   class Meta:
-       verbose_name_plural = "Storage"
-   name = models.CharField(max_length=20, unique=True)
-   is_active=models.BooleanField(default=True)
+    def show_active(self):
+        if self.is_active==True:
+            return self.name
+        else:
+            return "{} - D/A".format(self.name)
 
-   @classmethod
-   def create(cls, name):
-       storage = cls.objects.create(name=name)
-       return storage
+class Storage(models.Model):
+    def __str__(self):
+        return self.name
+    class Meta:
+        verbose_name_plural = "Storage"
+    name = models.CharField(max_length=20, unique=True)
+    is_active=models.BooleanField(default=True)
+
+    @classmethod
+    def create(cls, name):
+        storage = cls.objects.create(name=name)
+        return storage
+
+    def show_active(self):
+        if self.is_active==True:
+            return self.name
+        else:
+            return "{} - D/A".format(self.name)
 
 class Reagents(models.Model):
     def __str__(self):
@@ -112,6 +130,12 @@ class Reagents(models.Model):
             reagent=cls(**values)
             reagent.save()
             return reagent
+
+    def show_active(self):
+        if self.is_active==True:
+            return self.name
+        else:
+            return "{} - D/A".format(self.name)
 
 class Internal(models.Model):
     def __str__(self):
