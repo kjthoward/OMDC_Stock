@@ -1619,7 +1619,7 @@ def activstore(httprequest):
                     message="Location {} Has Been Reactivated".format(form.cleaned_data["name"].name)
                 form.cleaned_data["name"].save()
                 messages.success(httprequest, message)
-                return HttpResponseRedirect(reverse("stock_web:activproj"))
+                return HttpResponseRedirect(reverse("stock_web:activstore"))
     else:
         form = form()
 
