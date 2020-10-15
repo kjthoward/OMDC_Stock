@@ -94,7 +94,7 @@ def _toolbar(httprequest, active=""):
         toolbar[0][0].pop()
         reports_dropdown=[{"name":"Inventory Reports", "url":reverse("stock_web:invreport",args=["_","_"])},
                            {"name":"Stock Reports", "url":reverse("stock_web:stockreport", args=["_","_"])},
-                           {"name":"Project Reports", "url":reverse("stock_web:projreport",args=["_","_","_"])},
+                           {"name":"Project Reports", "url":reverse("stock_web:projreport",args=["_","_","_", "_"])},
                            {"name":"Items to Order", "url":reverse("stock_web:toorder")},]
 
         toolbar[0][0].append({"name": "Reports", "glyphicon":"download", "dropdown":reports_dropdown})
@@ -659,8 +659,8 @@ def label(httprequest):
 
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
-def projreport(httprequest, pk, extension, fin):
-    submiturl = reverse("stock_web:projreport",args=[pk,extension, fin])
+def projreport(httprequest, pk, extension, fin, type):
+    submiturl = reverse("stock_web:projreport",args=[pk,extension, fin, type])
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Reports")
     header = "Select Project to Generate Stock Report For"
@@ -673,21 +673,25 @@ def projreport(httprequest, pk, extension, fin):
                 form = form(httprequest.POST)
                 if form.is_valid():
                     if "pdf" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:projreport", args=[form.cleaned_data["name"].pk,0, form.cleaned_data["in_stock"]]))
+                        return HttpResponseRedirect(reverse("stock_web:projreport", args=[form.cleaned_data["name"].pk,0, form.cleaned_data["in_stock"], form.cleaned_data["type"]]))
                     elif "xlsx" in httprequest.POST["submit"]:
-                        return HttpResponseRedirect(reverse("stock_web:projreport", args=[form.cleaned_data["name"].pk,1, form.cleaned_data["in_stock"]]))
+                        return HttpResponseRedirect(reverse("stock_web:projreport", args=[form.cleaned_data["name"].pk,1, form.cleaned_data["in_stock"], form.cleaned_data["type"]]))
         else:
-            form = form()
+            form = form(initial = {"type":1})
 
     else:
-        title="{} - Project Stock Report".format(Projects.objects.get(pk=int(pk)))
         #gets items, with open items first, then sorted by expiry date
-        items = Inventory.objects.select_related("supplier","reagent", "project_used", "project", "internal","val","op_user").filter(project_id=int(pk))
+        if type=="1":
+            title="Booked in for Project: {} - Stock Report".format(Projects.objects.get(pk=int(pk)))
+            items = Inventory.objects.select_related("supplier","reagent", "project_used", "project", "internal","val","op_user").filter(project_used_id=int(pk))
+        elif type=="0":
+            title="Used by Project: {} - Stock Report".format(Projects.objects.get(pk=int(pk)))
+            items = Inventory.objects.select_related("supplier","reagent", "project_used", "project", "internal","val","op_user").filter(project_id=int(pk))
         if fin=="0":
             items=items.exclude(finished=True)
         items.order_by("-finished","-is_op","date_exp")
         body=[["Reagent", "Supplier Name", "Lot Number", "Date Received",
-               "Expiry Date", "Date Open", "Opened By", "Project Used", "Date Validated", "Validation Run", "Finished"]]
+               "Expiry Date", "Date Open", "Opened By", "Project Booked in", "Project Used", "Date Validated", "Validation Run", "Finished"]]
 
         for item in items:
             body+= [[ item.reagent.name,
@@ -697,6 +701,7 @@ def projreport(httprequest, pk, extension, fin):
                       item.date_exp.strftime("%d/%m/%y"),
                       item.date_op.strftime("%d/%m/%y") if item.date_op is not None else "",
                       item.op_user.username if item.op_user is not None else "",
+                      item.project.name if item.project_id is not None else "",
                       item.project_used.name if item.project_used_id is not None else "",
                       item.val.val_date.strftime("%d/%m/%y") if item.val is not None else "",
                       item.val.val_run if item.val is not None else "",

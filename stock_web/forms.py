@@ -353,8 +353,9 @@ class StockReportForm(forms.Form):
     name=forms.ModelChoiceField(queryset = Reagents.objects.filter(count_no__gte=1).exclude(is_active=False, count_no__lt=1).order_by("name"), label="Reagent", widget=Select2Widget)
 
 class ProjReportForm(forms.Form):
-    name=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), label="Project", widget=Select2Widget)
+    name=forms.ModelChoiceField(queryset = Projects.objects.order_by("name").exclude(is_active=False), label="Project", widget=Select2Widget)
     in_stock=forms.ChoiceField(label="Include Finished Items?", choices=[(0,"NO"),(1,"YES")])
+    type=forms.ChoiceField(label="Search Type", choices=[(0,"Project Booked-in"), (1, "Project Used")])
 
 class InvReportForm(forms.Form):
     report=forms.ChoiceField(label="Select Report To Generate",
