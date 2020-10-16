@@ -107,7 +107,6 @@ class UseItemForm(forms.ModelForm):
 
 
 class OpenItemForm(forms.ModelForm):
-    project=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), widget=Select2Widget, required=False)
     class Meta:
         model = Inventory
         fields = ("date_rec","date_op")
@@ -119,9 +118,7 @@ class OpenItemForm(forms.ModelForm):
         if self.cleaned_data["date_op"]<datetime.datetime.strptime(self.data["date_rec"],"%Y-%m-%d").date():
             self.add_error("date_op", forms.ValidationError("Date open occurs before received date"))
 
-    def __init__(self, *args, **kwargs):
-        super(OpenItemForm, self).__init__(*args, **kwargs)
-        self.fields["project"].queryset=Projects.objects.exclude(is_active=False)
+
 class ValItemForm(forms.ModelForm):
     val_date = forms.DateField(widget=DateInput, label="Validation Date")
     val_run = forms.CharField(max_length=20, widget=forms.TextInput(attrs={"autocomplete": "off"}), label="Validation Run")
@@ -136,6 +133,7 @@ class ValItemForm(forms.ModelForm):
 
 class FinishItemForm(forms.ModelForm):
     date_fin = forms.DateField(widget=DateInput,label="Date Finished")
+    project=forms.ModelChoiceField(queryset = Projects.objects.order_by("name"), widget=Select2Widget, required=False)
     class Meta:
         model = Inventory
         fields = ("date_op","fin_text","is_op", "date_rec")
@@ -151,7 +149,10 @@ class FinishItemForm(forms.ModelForm):
         if self.cleaned_data["is_op"]==True:
             if fin_date<datetime.datetime.strptime(self.data["date_op"],"%Y-%m-%d").date():
                 self.add_error("date_fin", forms.ValidationError("Date occurs before item was opened"))
-
+    
+    def __init__(self, *args, **kwargs):
+        super(FinishItemForm, self).__init__(*args, **kwargs)
+        self.fields["project"].queryset=Projects.objects.exclude(is_active=False)
 
 class NewSupForm(forms.ModelForm):
     class Meta:

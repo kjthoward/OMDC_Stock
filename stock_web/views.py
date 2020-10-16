@@ -1077,7 +1077,7 @@ def openitem(httprequest, pk):
     else:
         if item.is_op==True:
             return HttpResponseRedirect(reverse("stock_web:item",args=[pk]))
-        form=form(instance=item,initial = {"date_op":datetime.datetime.now(),"project":item.project})
+        form=form(instance=item,initial = {"date_op":datetime.datetime.now()})
     submiturl = reverse("stock_web:openitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
@@ -1167,7 +1167,8 @@ def finishitem(httprequest, pk):
         if item.val_id is None and item.is_op==True and item.sol is None:
             messages.success(httprequest,"WARNING - THIS ITEM HAS NOT BEEN VALIDATED")
         form=form(instance=item,initial = {"date_fin":datetime.datetime.now(),
-                                           "date_rec":item.date_rec})
+                                           "date_rec":item.date_rec,
+                                           "project":item.project})
     submiturl = reverse("stock_web:finishitem",args=[pk])
     cancelurl = reverse("stock_web:item",args=[pk])
     return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
@@ -1863,6 +1864,7 @@ def undoitem(httprequest, task, pk):
                                 item.finished=0
                                 item.fin_user=None
                                 item.fin_text=None
+                                item.project_used=None
                                 item.reagent.save()
                                 item.save()
                             elif task=="unopen":
