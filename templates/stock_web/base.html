@@ -81,13 +81,19 @@
     {% endblock content %}
   </body>
   {% if messages %}
-<ul class="messages">
-    {% for message in messages %}
-	{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %} <script>swal("Stock Database", "{{ message }}") </script> {% endif %}
+  <ul class="messages">
+      {% for message in messages %}
 
-	{% if message.level == DEFAULT_MESSAGE_LEVELS.INFO %}<li>{{ message }}</li>{% endif %}
+  	{% if message.level == DEFAULT_MESSAGE_LEVELS.SUCCESS %}
+      <script>
+        var span = document.createElement("span");
+        span.innerHTML='{{ message| linebreaks }}'
+        swal({title:"Stock Database", content:span}) </script> {% endif %}
 
-    {% endfor %}
-	{% endif %}
-</ul>
+    {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}</ul>{{ message }}<ul>{% endif %}
+  	{% if message.level == DEFAULT_MESSAGE_LEVELS.INFO %}<li>{{ message }}</li>{% endif %}
+
+      {% endfor %}
+  	{% endif %}
+  </ul>
 </html>
