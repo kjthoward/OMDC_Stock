@@ -34,6 +34,7 @@ urlpatterns = [
     re_path(r"^removestore/$", views.removestore, name="removestore"),
     re_path(r"^removeproj/$", views.removeproj, name="removeproj"),
     re_path(r"^editinv/(.*)/$", views.editinv, name="editinv"),
+    re_path(r"^changeloc/(.*)/$", views.changeloc, name="changeloc"),
     re_path(r"^stockreport/(.*)/(.*)/$", views.stockreport, name="stockreport"),
     re_path(r"^invreport/(.*)/(.*)/$", views.invreport, name="invreport"),
     re_path(r"^projreport/(.*)/(.*)/(.*)/(.*)/$", views.projreport, name="projreport"),

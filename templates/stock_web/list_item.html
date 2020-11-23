@@ -3,6 +3,9 @@
 {% block content %}
 
 <div class="container-fluid">
+{% if warn %}
+<h3> {{warn}} </h3>
+{% endif %}
 <table>
   {% for head, value, url in header %}
     <tr>

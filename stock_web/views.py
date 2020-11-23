@@ -24,7 +24,8 @@ from .models import ForceReset, Suppliers, Reagents, Internal, Validation, Recip
 from .forms import LoginForm, NewInvForm1, NewInvForm, NewProbeForm, UseItemForm, OpenItemForm, ValItemForm, FinishItemForm,\
                    NewSupForm, NewReagentForm, NewRecipeForm, SearchForm, ChangeDefForm1, ChangeDefForm, RemoveSupForm,\
                    EditSupForm, EditReagForm, EditInvForm, DeleteForm, UnValForm, ChangeMinForm1, ChangeMinForm, InvReportForm,\
-                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm, ProjReportForm, RemoveProjForm, NewStoreForm, EditStoreForm, RemoveStoreForm
+                   StockReportForm, PWResetForm, WitnessForm, NewProjForm, EditProjForm, ProjReportForm, RemoveProjForm, NewStoreForm,\
+                   EditStoreForm, RemoveStoreForm, EditLocForm
 
 LOGINURL = settings.LOGIN_URL
 RESETURL = "/stock/forcereset/"
@@ -368,7 +369,7 @@ def inventory(httprequest, search, what, sortby, page):
         #forces go to page 1 if number>last page manually entered
         if page>pages[-1][0]:
              return HttpResponseRedirect(reverse("stock_web:inventory", args=[search, what, sortby, 1]))
-    headings = ["Reagent Name", "Supplier", "Batch ID", "Date Received", "Expiry Date", "Project", "Storage Location", "Date Opened", "Days till expired"]
+    headings = ["Reagent Name", "Supplier", "Stock Number", "Date Received", "Expiry Date", "Project", "Storage Location", "Date Opened", "Days till expired"]
     headurls = [reverse("stock_web:inventory", args=[search, what,"order=-reagent_id__name"
                                                      if sortby=="order=reagent_id__name" else "order=reagent_id__name", 1]),
                 reverse("stock_web:inventory", args=[search, what,"order=-supplier_id__name"
@@ -737,10 +738,9 @@ def _item_context(httprequest, item, undo):
                   item.lot_no if item.lot_no else "",
                   item.internal.batch_number]
     title_url=["","","",""]
+    warning=None
     if undo=="undo":
-        title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
-        title_values.append("")
-        title_url.append("")
+        warning="***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"
     if item.project_id is not None:
         title.append("Project -")
         title_values.append(item.project.name)
@@ -749,10 +749,13 @@ def _item_context(httprequest, item, undo):
         title.append("Used By Project -")
         title_values.append(item.project_used.name)
         title_url.append("")
-    if item.storage is not None:
+    if item.storage is not None or undo=="undo":
         title.append("Location -")
-        title_values.append(item.storage.name)
-        title_url.append("")
+        title_values.append(item.storage)
+        if undo=="undo":
+            title_url.append(reverse("stock_web:changeloc", args=[item.pk]))
+        else:
+            title_url.append("")
     if item.po is not None:
         title.append("Purchase Order Number -")
         title_values.append(item.po)
@@ -765,7 +768,6 @@ def _item_context(httprequest, item, undo):
             title.append("")
             title_values.append(comp)
             title_url.append(reverse("stock_web:item",args=[comp.id]))
-
     title=zip(title, title_values ,title_url)
     if item.sol is not None:
         headings = ["Date Created", "Created By", "Condition Received", "Expiry Date"]
@@ -829,7 +831,7 @@ def _item_context(httprequest, item, undo):
             values+=["Re-Open Item"]
             urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
     body = [(zip(values,urls, urls),False)]
-    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "track_vol":False, "label": item.printed}
+    context = {"warn": warning, "header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "track_vol":False, "label": item.printed}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     return context
@@ -855,10 +857,9 @@ def _vol_context(httprequest, item, undo):
                   item.current_vol if item.current_vol is not None else 0]
     title_url=["","","","","","","",""]
     skip=False
+    warning=None
     if undo=="undo":
-        title[0:0]=["***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"]
-        title_values.append("")
-        title_url.append("")
+        warning="***WARNING - ONLY TO BE USED TO CORRECT DATA ENTRY ERRORS. IT MAY NOT BE POSSIBLE TO UNDO CHANGES MADE HERE***"
     if item.project_id is not None:
         title.append("Project -")
         title_values.append(item.project.name)
@@ -867,10 +868,13 @@ def _vol_context(httprequest, item, undo):
         title.append("Used By Project -")
         title_values.append(item.project_used.name)
         title_url.append("")
-    if item.storage is not None:
+    if item.storage is not None or undo=="undo":
         title.append("Location -")
-        title_values.append(item.storage.name)
-        title_url.append("")
+        title_values.append(item.storage)
+        if undo=="undo":
+            title_url.append(reverse("stock_web:changeloc", args=[item.pk]))
+        else:
+            title_url.append("")
     if item.sol is not None:
         title.append("Witnessed By -")
         title_values.append(item.witness)
@@ -943,7 +947,7 @@ def _vol_context(httprequest, item, undo):
         values+=[item.date_fin, item.fin_user]
         urls+=["",""]
     body = [(zip(values,urls, urls),stripe)]
-    context = {"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest),"label":item.printed}
+    context = {"warn":warning,"header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest),"label":item.printed}
     if ((item.finished==True) and (item.fin_text is not None)):
         context.update({"newinformation":item.fin_text})
     if item.current_vol<item.vol_rec:
@@ -1841,6 +1845,33 @@ def editinv(httprequest, pk):
         else:
             return render(httprequest, "stock_web/list_item.html", _item_context(httprequest, item, "undo"))
 
+@user_passes_test(is_admin, login_url=UNAUTHURL)
+@user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
+def changeloc(httprequest, pk):
+    item=Inventory.objects.get(pk=int(pk))
+    submiturl = reverse("stock_web:changeloc",args=[pk])
+    cancelurl = reverse("stock_web:listinv")
+    header=[f"Select New Storage Location for: {item}", f"Current Location is: {item.storage}"]
+    toolbar = _toolbar(httprequest, active="Edit Data")
+    form=EditLocForm
+    if httprequest.method=="POST":
+        if "submit" not in httprequest.POST:
+            return HttpResponseRedirect(httprequest.session["referer"] if ("referer" in httprequest.session) else reverse("stock_web:listinv"))
+        else:
+            form = form(httprequest.POST)
+            if form.is_valid():
+                item.storage=form.cleaned_data["new_location"]
+                item.save()
+                item.refresh_from_db()
+                messages.success(httprequest, f"Storage location for {item} has been changed to {item.storage}")
+                return HttpResponseRedirect(reverse("stock_web:item", args=[pk]))
+    else:
+        if item.storage!=None:
+            form = form(initial = {"old":item.storage})
+        else:
+            form=form()
+    return render(httprequest, "stock_web/form.html", {"header": header, "form": form, "toolbar": _toolbar(httprequest), "submiturl": submiturl, "cancelurl": cancelurl})
+    
 @user_passes_test(is_admin, login_url=UNAUTHURL)
 @user_passes_test(no_reset, login_url=RESETURL, redirect_field_name=None)
 def undoitem(httprequest, task, pk):

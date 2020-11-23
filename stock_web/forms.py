@@ -323,6 +323,16 @@ class EditStoreForm(forms.Form):
 class EditReagForm(forms.Form):
     name=ShowActiveModelChoiceField(queryset = Reagents.objects.all().order_by("name"), widget=Select2Widget, label=u"Reagent")
 
+class EditLocForm(forms.Form):
+    new_location=ShowActiveModelChoiceField(queryset = Storage.objects.all().order_by("name"), widget=Select2Widget, label=u"New Storage Location")
+    old=forms.ModelChoiceField(queryset = Storage.objects.all().order_by("name"), widget=forms.HiddenInput(), required=False)
+    def clean(self):
+        super(EditLocForm, self).clean()
+        # import pdb; pdb.set_trace()
+        if "old" in self.cleaned_data:
+            if self.cleaned_data["old"]==self.cleaned_data["new_location"]:
+                self.add_error("new_location", forms.ValidationError("Previous Location Selected. Item Not Changed"))
+
 class EditInvForm(forms.Form):
     item=forms.CharField(label="Reagent Internal ID", max_length=4,widget=forms.TextInput(attrs={"autocomplete": "off"}))
     def clean(self):
