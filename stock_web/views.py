@@ -119,7 +119,7 @@ def _toolbar(httprequest, active=""):
 
     toolbar[1][0].append({"name": "search", "glyphicon": "search", "url": reverse("stock_web:search")})
     toolbar[1][0].append({"name":"Account Settings", "glyphicon":"cog", "dropdown":[
-                         {"name": "Logout "+str(httprequest.user), "url": reverse("stock_web:loginview")},
+                         {"name": "Logout "+str(httprequest.user), "url": reverse("stock_web:logout_page")},
                          {"name":"Change Password", "url":reverse("stock_web:change_password")}]})
 
     for entry in toolbar[0][0]:
@@ -234,12 +234,17 @@ def search(httprequest):
     cancelurl = reverse("stock_web:listinv")
     return render(httprequest, "stock_web/searchform.html", {"form": form, "heading":"Enter Search Query", "toolbar": _toolbar(httprequest, active="search"), "submiturl": submiturl, "cancelurl": cancelurl })
 
-
-def loginview(httprequest):
+def logout_page(httprequest):
     if httprequest.user.is_authenticated:
         logout(httprequest)
         messages.success(httprequest,"You are now logged out")
-        return HttpResponseRedirect(reverse("stock_web:listinv"))
+        return HttpResponseRedirect(reverse("stock_web:loginview"))
+    else:
+        return HttpResponseRedirect(reverse("stock_web"))
+
+def loginview(httprequest):
+    if httprequest.user.is_authenticated:
+        return HttpResponseRedirect(httprequest.GET["next"] if "next" in httprequest.GET.keys() else reverse("stock_web:listinv"))
     else:
 
         if httprequest.method == "POST" and "login" in httprequest.POST:
