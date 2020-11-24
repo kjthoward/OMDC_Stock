@@ -95,7 +95,7 @@ class Storage(models.Model):
         return self.name
     class Meta:
         verbose_name_plural = "Storage"
-    name = models.CharField(max_length=20, unique=True)
+    name = models.CharField(max_length=50, unique=True)
     is_active=models.BooleanField(default=True)
 
     @classmethod
