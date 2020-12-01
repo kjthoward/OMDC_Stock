@@ -1908,6 +1908,7 @@ def undoitem(httprequest, task, pk):
                                 item.finished=0
                                 item.fin_user=None
                                 item.fin_text=None
+                                item.date_fin=None
                                 item.project_used=None
                                 item.reagent.save()
                                 item.save()
