@@ -400,7 +400,8 @@ class Inventory(models.Model):
                     reagent.count_no=F("count_no")-values["vol"]
                 else:
                     reagent.count_no=F("count_no")-invitem.current_vol
-                reagent.open_no=F("open_no")-1
+                if invitem.is_op==True:
+                    reagent.open_no=F("open_no")-1
                 reagent.save()
                 invitem.current_vol=0
                 invitem.save()

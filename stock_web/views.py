@@ -846,8 +846,12 @@ def _item_context(httprequest, item, undo):
         urls+=["",""]
         if undo=="undo":
             headings+=["Action"]
-            values+=["Re-Open Item"]
-            urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
+            if item.is_op==True:
+                values+=["Re-Open Item"]
+                urls+=[reverse("stock_web:undoitem",args=["reopen",item.id])]
+            if item.is_op==False:
+                values+=["Un-Discard Item"]
+                urls+=[reverse("stock_web:undoitem",args=["undiscard",item.id])]
     body = [(zip(values,urls, urls),False)]
     context = {"warn": warning, "header":title,"headings":headings, "body":body, "toolbar":_toolbar(httprequest), "track_vol":False, "label": item.printed}
     if ((item.finished==True) and (item.fin_text is not None)):
@@ -990,7 +994,10 @@ def _vol_context(httprequest, item, undo):
             if undo=="undo":
                 if use==item.last_usage:
                     if item.finished==True:
-                        values+=["UNDO (RE-OPEN)"]
+                        if item.is_op==True:
+                            values+=["UNDO (RE-OPEN)"]
+                        else:
+                            values+=["UNDO"]
                     else:
                         values+=["UNDO"]
                     urls+=[reverse("stock_web:undoitem",args=["unuse",item.id])]
@@ -1904,7 +1911,7 @@ def undoitem(httprequest, task, pk):
     cancelurl = reverse("stock_web:listinv")
     toolbar = _toolbar(httprequest, active="Edit Data")
 
-    if task in ["delete", "unopen", "reopen","unuse"]:
+    if task in ["delete", "unopen", "reopen","unuse", "undiscard"]:
         form = DeleteForm
         title=["ARE YOU SURE YOU WANT TO {} ITEM {} - {} {}".format(task.upper(), item.internal, item.reagent,"({}µl use)".format(item.last_usage.used) if task=="unuse" else "")]
         if task=="unopen" and item.reagent.track_vol==True and item.current_vol!=item.vol_rec:
@@ -1926,6 +1933,15 @@ def undoitem(httprequest, task, pk):
                                 item.date_fin=None
                                 item.project_used=None
                                 item.reagent.open_no=F("open_no")+1
+                                item.reagent.save()
+                                item.save()
+                            if task=="undiscard":
+                                item.finished=0
+                                item.fin_user=None
+                                item.fin_text=None
+                                item.date_fin=None
+                                item.project_used=None
+                                item.reagent.count_no=F("count_no")+1
                                 item.reagent.save()
                                 item.save()
                             elif task=="unopen":
@@ -1974,6 +1990,9 @@ def undoitem(httprequest, task, pk):
                                     item.date_fin=None
                                     item.fin_user=None
                                     item.fin_text=None
+                                    if item.is_op==True:
+                                        item.reagent.open_no=F("open_no")+1
+                                        item.reagent.save()
                                 item.save()
                                 use.delete()
                             if task=="delete":
